@@ -313,7 +313,7 @@ function renderGuest() {
   const keepInput = G.tab === "add" ? { url: $("#url")?.value, cat: $("#cat")?.value, title: $("#title")?.value } : null;
   const focusId = document.activeElement?.id;
   app.innerHTML = `<div class="wrap">${brand}
-    <div class="row small muted" style="margin:-8px 0 16px">Playing as&nbsp;<b style="color:var(--text)">${esc(team.name)}</b><button class="btn-ghost btn-sm" id="switchTeam" style="margin-left:auto">Switch</button></div>
+    <div class="row small muted" style="margin:-8px 0 16px">Playing as&nbsp;<b style="color:var(--text)">${esc(team.name)}</b><button class="btn-ghost btn-sm" id="switchTeam" style="margin-left:auto">Sign off</button></div>
     ${body}</div>${tabs}`;
   if (keepInput) {
     if (keepInput.url != null) $("#url").value = keepInput.url;
@@ -323,6 +323,10 @@ function renderGuest() {
   }
   bindGuest();
 }
+
+const MOVIE_FAMILIES = ["The Fockers", "The Stiflers", "The Zoolanders", "The Gilmores", "The Madisons", "The Dynamites", "The Burgundys", "The Lebowskis"];
+let _placeholder;
+function teamPlaceholder() { return _placeholder ||= MOVIE_FAMILIES[Math.floor(Math.random() * MOVIE_FAMILIES.length)]; }
 
 function renderJoin(brand) {
   const chips = S.teams.map(t => `<button class="chip" data-join="${esc(t.id)}">${esc(t.name)}</button>`).join("");
@@ -344,8 +348,9 @@ function renderJoin(brand) {
       <h2>Join as a team</h2>
       <p class="muted" style="margin:4px 0 0">Each couple is one team. Use the same team name on both phones.</p>
       ${S.teams.length ? `<label>Already here? Tap your team</label><div>${chips}</div><label for="teamName">Or start a new team</label>` : `<label for="teamName">Team name</label>`}
-      <input id="teamName" placeholder="e.g. The Hendersons or Bennifer" maxlength="40" autocomplete="off">
+      <input id="teamName" placeholder="e.g. ${esc(teamPlaceholder())}" maxlength="40" autocomplete="off">
       <button class="btn-gold" id="joinBtn" style="width:100%;margin-top:12px">Join the game</button>
+      <p class="muted small" style="margin:10px 0 0;text-align:center">Unlike thefacebook.com, no .edu address required.</p>
     </div>
 
     <section class="how">
@@ -459,7 +464,7 @@ async function addSong() {
     const newId = await rpc("add_submission", { p_token: token(), p_team: guestTeam().id, p_category: cat, p_url: $("#url").value.trim().slice(0, 300), p_video_id: id, p_title: title });
     S.mySubs.add(newId); store.set("mvs_last_cat", cat);
     $("#url").value = ""; G.pendingId = null; $("#previewBox").innerHTML = "";
-    await refresh(); toast(`Added to ${cat} 🎬`);
+    await refresh(); toast(S.mySubs.size === 1 ? "First video’s in. You can do it!" : `Added to ${cat}.`);
   } catch (e) { toast(errMsg(e)); btn.disabled = false; }
 }
 
@@ -632,7 +637,7 @@ function drawScreen() {
     const ranked = rankRound(D.cat).filter(s => s.votes > 0);
     const top = ranked.filter(s => s.rank <= 2);
     el.innerHTML = `${close}<div class="kicker">Results · ${esc(D.cat)}</div><h2>Coming in at number one…</h2>
-      <div class="podium">${top.length ? top.map(s => `<div class="pod ${s.rank === 1 ? "p1" : ""}"><div class="place">${s.rank === 1 ? "1st" : "2nd"}</div><img src="${thumb(s.video_id)}" alt=""><div><div class="t">${esc(s.title)}</div><div class="team">${esc(teamName(s.team_id))}</div><div class="muted">${s.votes} vote${s.votes === 1 ? "" : "s"}</div></div><div class="pts">+${s.points}</div></div>`).join("") : `<p class="muted" style="font-size:24px">No votes were cast.</p>`}</div>
+      <div class="podium">${top.length ? top.map(s => `<div class="pod ${s.rank === 1 ? "p1" : ""}"><div class="place">${s.rank === 1 ? "1st" : "2nd"}</div><img src="${thumb(s.video_id)}" alt=""><div><div class="t">${esc(s.title)}</div><div class="team">${esc(teamName(s.team_id))}</div><div class="muted">${s.votes} vote${s.votes === 1 ? "" : "s"} · ${s.rank === 1 ? "Smokin’!" : "So you’re telling me there’s a chance."}</div></div><div class="pts">+${s.points}</div></div>`).join("") : `<p class="muted" style="font-size:clamp(20px,2.4vw,34px);max-width:28em">No votes were cast. We award you no points, and may God have mercy on your soul.</p>`}</div>
       <div style="margin-top:4vh"><button class="btn-gold" id="toScores" style="font-size:clamp(16px,1.6vw,22px)">🏆 Show scoreboard</button></div>`;
     $("#toScores").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
   } else if (D.screen === "scoreboard") {
