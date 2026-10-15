@@ -155,19 +155,36 @@ function parseYouTube(url) {
   return m ? m[1] : null;
 }
 const thumb = id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-const guestUrl = () => location.href.split("#")[0].split("?")[0];
+const baseUrl = () => location.origin + location.pathname;
+const guestUrl = (g = GAME) => baseUrl() + (g && !g.is_default ? "?g=" + encodeURIComponent(g.slug) : "");
 function errMsg(e) { return (e && (e.message || e.error_description)) || "Something went wrong"; }
 async function rpc(fn, args) { const { data, error } = await sb.rpc(fn, args); if (error) throw error; return data; }
 
 // ---------- shared data ----------
-const S = { teams: [], subs: [], rounds: {}, tallies: [], game: null, myVotes: {}, mySubs: new Set(), loaded: false };
+const S = { games: [], teams: [], subs: [], rounds: {}, tallies: [], game: null, myVotes: {}, mySubs: new Set(), loaded: false, noGame: false };
+let GAME = null; // the game this page is showing
+function pickGame() {
+  const def = S.games.find(g => g.is_default) || S.games[0] || null;
+  if (isDJ()) return S.games.find(g => g.id === store.get("mvs_dj_game")) || def;
+  const slug = new URLSearchParams(location.search).get("g");
+  return slug ? S.games.find(g => g.slug === slug.toLowerCase()) || null : def;
+}
 async function loadAll() {
+  const gq = await sb.from("games").select("id,slug,name,is_default,created_at").order("created_at");
+  if (gq.error) throw gq.error;
+  S.games = gq.data;
+  const prev = GAME && GAME.id;
+  GAME = pickGame();
+  if (!GAME) { S.noGame = true; S.loaded = true; return; }
+  S.noGame = false;
+  if (prev && prev !== GAME.id) { S.myVotes = {}; S.mySubs = new Set(); }
+  const gid = GAME.id;
   const [t, s, r, g, tal] = await Promise.all([
-    sb.from("teams").select("id,name").order("name"),
-    sb.from("submissions").select("id,team_id,category,url,video_id,title,created_at").order("created_at"),
-    sb.from("rounds").select("category,status"),
-    sb.from("game_state").select("*").eq("id", 1).maybeSingle(),
-    sb.rpc("get_tallies"),
+    sb.from("teams").select("id,name").eq("game_id", gid).order("name"),
+    sb.from("submissions").select("id,team_id,category,url,video_id,title,created_at").eq("game_id", gid).order("created_at"),
+    sb.from("rounds").select("category,status").eq("game_id", gid),
+    sb.from("game_state").select("*").eq("game_id", gid).maybeSingle(),
+    sb.rpc("get_tallies", { p_game: gid }),
   ]);
   for (const x of [t, s, r, g, tal]) if (x.error) throw x.error;
   S.teams = t.data; S.subs = s.data; S.game = g.data; S.tallies = tal.data || [];
@@ -203,13 +220,18 @@ function scoreRows(rows) {
 // =====================================================================
 const G = { tab: "add", pendingId: null, pendingTitle: "", busy: false, lastPhaseKey: "" };
 
-function guestTeam() { const id = store.get("mvs_team"); const name = store.get("mvs_team_name"); return id ? { id, name } : null; }
+const teamKey = () => "mvs_team_" + (GAME ? GAME.id : "");
+function guestTeam() {
+  const raw = store.get(teamKey()); if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
 function renderGuest() {
   const app = $("#app");
-  const team = guestTeam();
-  const brand = `<div class="brand"><div class="logo">🍺</div><div><h1>Music Video Showdown</h1><div class="sub">Oktoberfest edition</div></div></div>`;
+  const brand = `<div class="brand"><div class="logo">🍺</div><div><h1>Music Video Showdown</h1><div class="sub">${esc(GAME ? GAME.name : "")}</div></div></div>`;
   if (!S.loaded) { app.innerHTML = `<div class="wrap">${brand}<p class="muted">Loading…</p></div>`; return; }
+  if (S.noGame) { app.innerHTML = `<div class="wrap">${brand}<div class="empty card"><div class="big">🤷</div><h2 style="font-size:22px;margin:8px 0">Game not found</h2><p class="muted">Check the link with your host, or <a href="${esc(baseUrl())}">go to the main game</a>.</p></div></div>`; return; }
+  const team = guestTeam();
   if (!team || !S.teams.some(t => t.id === team.id)) { renderJoin(brand); return; }
 
   const g = S.game || {};
@@ -250,12 +272,12 @@ function renderJoin(brand) {
     </div></div>`;
   $("#joinBtn").onclick = async () => {
     const name = $("#teamName").value.trim(); if (!name) return toast("Enter a team name");
-    try { const id = await rpc("join_team", { p_name: name }); await loadAll(); setTeam(id); } catch (e) { toast(errMsg(e)); }
+    try { const id = await rpc("join_team", { p_game: GAME.id, p_name: name }); await loadAll(); setTeam(id); } catch (e) { toast(errMsg(e)); }
   };
   $("#teamName").onkeydown = e => { if (e.key === "Enter") $("#joinBtn").click(); };
   document.querySelectorAll("[data-join]").forEach(b => b.onclick = () => setTeam(b.dataset.join));
 }
-function setTeam(id) { store.set("mvs_team", id); store.set("mvs_team_name", teamName(id)); renderGuest(); }
+function setTeam(id) { store.set(teamKey(), JSON.stringify({ id, name: teamName(id) })); renderGuest(); }
 
 function guestAdd() {
   const opts = CATEGORIES.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${subsIn(c.name).length})</option>`).join("");
@@ -293,7 +315,7 @@ function guestVote(cat, g) {
 
 function bindGuest() {
   document.querySelectorAll(".tabs [data-tab]").forEach(b => b.onclick = () => { G.tab = b.dataset.tab; renderGuest(); window.scrollTo(0, 0); });
-  $("#switchTeam").onclick = () => { store.del("mvs_team"); store.del("mvs_team_name"); renderGuest(); };
+  $("#switchTeam").onclick = () => { store.del(teamKey()); renderGuest(); };
   document.querySelectorAll("[data-vote]").forEach(b => b.onclick = async () => {
     const id = b.dataset.vote; const sub = S.subs.find(s => s.id === id);
     S.myVotes[sub.category] = id; renderGuest();
@@ -348,7 +370,8 @@ async function addSong() {
 
 async function loadMine() {
   try {
-    const [ids, votes] = await Promise.all([rpc("my_submissions", { p_token: token() }), rpc("my_votes", { p_token: token() })]);
+    if (!GAME) return;
+    const [ids, votes] = await Promise.all([rpc("my_submissions", { p_token: token() }), rpc("my_votes", { p_token: token(), p_game: GAME.id })]);
     S.mySubs = new Set(ids || []);
     S.myVotes = Object.fromEntries((votes || []).map(v => [v.category, v.submission_id]));
   } catch {}
@@ -370,6 +393,14 @@ function renderDJ() {
   }
   if (!S.loaded) { app.innerHTML = `<div class="wrap"><p class="muted">Loading…</p></div>`; return; }
   if (D.playing) return; // don't redraw under the video
+  if (S.noGame) { app.innerHTML = `<div class="wrap"><div class="card"><h2>No games yet</h2><button class="btn-gold" id="newGame" style="margin-top:12px">+ New game</button></div></div>`; $("#newGame").onclick = newGame; return; }
+  const gameOpts = S.games.map(g => `<option value="${g.id}" ${g.id === GAME.id ? "selected" : ""}>${g.is_default ? "★ " : ""}${esc(g.name)}</option>`).join("");
+  const gameBox = `<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)">
+      <label for="gameSel" style="margin-top:0">Game</label>
+      <select id="gameSel">${gameOpts}</select>
+      <div class="small" style="margin-top:8px">${GAME.is_default ? `<span class="badge done">★ Default</span> <span class="muted">opens from the main link</span>` : `<span class="badge" style="background:rgba(78,163,255,.15);color:var(--blue)">Not the default</span> <span class="muted">has its own link</span>`}</div>
+      <div class="toolbar" style="margin-top:10px"><button class="btn-ghost btn-sm" id="copyLink">🔗 Copy guest link</button><button class="btn-ghost btn-sm" id="newGame">+ New game</button></div>
+    </div>`;
 
   const side = CATEGORIES.map(c => {
     const st = S.rounds[c.name]; const n = subsIn(c.name).length;
@@ -395,12 +426,13 @@ function renderDJ() {
   app.innerHTML = `<div class="dj">
     <aside class="side">
       <div class="brand" style="margin-top:0"><div class="logo">🎧</div><div><h1 style="font-size:19px">DJ booth</h1><div class="sub">${S.subs.length} videos · ${S.teams.length} teams</div></div></div>
+      ${gameBox}
       ${side}
       <div style="border-top:1px solid var(--line);margin:14px 0;padding-top:14px;display:grid;gap:8px">
         <button class="btn-gold" id="scoresBtn">🏆 Scoreboard on TV</button>
         <button class="btn-ghost" id="qrBtn">📱 Join QR code on TV</button>
         <label style="display:flex;gap:8px;align-items:center;margin:4px 0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--text)"><input type="checkbox" id="pickers" style="width:auto" ${D.showPickers ? "checked" : ""}> Show who picked each video</label>
-        <button class="btn-ghost btn-sm" id="teamsBtn">Manage teams</button>
+        <button class="btn-ghost btn-sm" id="teamsBtn">Manage game & teams</button>
         <button class="btn-ghost btn-sm" id="logout">Sign out of DJ</button>
       </div>
     </aside>
@@ -424,6 +456,13 @@ function bindDJ() {
   $("#scoresBtn").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
   $("#qrBtn").onclick = () => { D.screen = "join"; drawScreen(); };
   $("#teamsBtn").onclick = manageTeams;
+  $("#gameSel").onchange = e => switchGame(e.target.value);
+  $("#newGame").onclick = newGame;
+  $("#copyLink").onclick = async () => {
+    const url = guestUrl();
+    try { await navigator.clipboard.writeText(url); toast("Copied: " + url.replace(/^https?:\/\//, "")); }
+    catch { prompt("Guest link for " + GAME.name, url); }
+  };
   const on = (id, fn) => { const el = $("#" + id); if (el) el.onclick = fn; };
   on("openVote", async () => { await hostCall("host_set_round", { p_category: D.cat, p_status: "voting" }); await setPhase("voting", D.cat); D.screen = "vote"; drawScreen(); });
   on("showVote", () => { D.screen = "vote"; drawScreen(); });
@@ -433,12 +472,24 @@ function bindDJ() {
   on("resetRound", async () => { if (!confirm(`Clear all votes for ${D.cat} and start the round over?`)) return; await hostCall("host_set_round", { p_category: D.cat, p_status: null }); });
 }
 
+async function switchGame(id) {
+  store.set("mvs_dj_game", id); D.cat = CATEGORIES[0].name; D.screen = null; $("#screen")?.remove();
+  S.loaded = false; renderDJ(); await refresh();
+  toast("Switched to " + GAME.name);
+}
+async function newGame() {
+  const name = prompt("Name the new game (e.g. \"Test run\" or \"Oktoberfest 2027\")");
+  if (!name || !name.trim()) return;
+  try { const id = await rpc("host_create_game", { p_pin: D.pin, p_name: name.trim() }); await switchGame(id); }
+  catch (e) { toast(errMsg(e)); }
+}
 async function hostCall(fn, args) {
-  try { await rpc(fn, { p_pin: D.pin, ...args }); await refresh(); return true; }
+  const needsGame = ["host_set_round", "host_reset_game", "host_set_default_game", "host_delete_game", "host_rename_game"].includes(fn);
+  try { await rpc(fn, { p_pin: D.pin, ...(needsGame ? { p_game: GAME.id } : {}), ...args }); await refresh(); return true; }
   catch (e) { toast(errMsg(e)); if (/PIN/i.test(errMsg(e))) { store.del("mvs_pin"); D.pin = null; renderDJ(); } return false; }
 }
 async function setPhase(phase, cat, nowPlaying = null) {
-  try { await rpc("host_set_state", { p_pin: D.pin, p_category: cat, p_phase: phase, p_now_playing: nowPlaying }); } catch (e) { toast(errMsg(e)); }
+  try { await rpc("host_set_state", { p_pin: D.pin, p_game: GAME.id, p_category: cat, p_phase: phase, p_now_playing: nowPlaying }); } catch (e) { toast(errMsg(e)); }
 }
 
 function playVideo(id) {
@@ -497,13 +548,38 @@ function drawScreen() {
 function manageTeams() {
   const el = document.createElement("div"); el.className = "screen"; el.id = "teamsScreen";
   const draw = () => {
-    el.innerHTML = `<button class="btn-ghost btn-sm screen-close" id="tClose">✕ Close</button><h2 style="font-size:34px;margin-bottom:16px">Teams</h2>
-      <div style="max-width:640px">${S.teams.map(t => `<div class="score-row"><span class="grow">${esc(t.name)}</span><span class="muted small">${S.subs.filter(s => s.team_id === t.id).length} videos</span><button class="btn-red btn-sm" data-dt="${t.id}">Delete</button></div>`).join("") || '<p class="muted">No teams yet.</p>'}
-      <p class="muted small" style="margin-top:18px">Deleting a team also deletes its videos. Use it to clean up duplicates or test entries.</p>
-      <button class="btn-red" id="resetAll" style="margin-top:24px">Reset entire game…</button></div>`;
+    const others = S.games.filter(g => g.id !== GAME.id);
+    el.innerHTML = `<button class="btn-ghost btn-sm screen-close" id="tClose">✕ Close</button>
+      <div style="max-width:640px">
+      <div class="kicker" style="color:var(--gold);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px">Game</div>
+      <h2 style="font-size:34px;margin-bottom:6px">${esc(GAME.name)}</h2>
+      <p class="muted small" style="margin:0 0 12px">Guest link: <b style="color:var(--text)">${esc(guestUrl().replace(/^https?:\/\//, ""))}</b>${GAME.is_default ? " (the main link)" : ""}</p>
+      <div class="toolbar">
+        <button class="btn-ghost btn-sm" id="gRename">Rename</button>
+        ${GAME.is_default ? "" : `<button class="btn-gold btn-sm" id="gDefault">★ Make this the default game</button>`}
+      </div>
+      <p class="muted small" style="margin-top:10px">The default game is what the main link opens. Every other game has its own link with <code>?g=</code> on the end, so tests never mix with the real party.</p>
+
+      <h2 style="font-size:26px;margin:28px 0 12px">Teams</h2>
+      ${S.teams.map(t => `<div class="score-row"><span class="grow">${esc(t.name)}</span><span class="muted small">${S.subs.filter(s => s.team_id === t.id).length} videos</span><button class="btn-red btn-sm" data-dt="${t.id}">Delete</button></div>`).join("") || '<p class="muted">No teams yet.</p>'}
+      <p class="muted small" style="margin-top:12px">Deleting a team also deletes its videos. Use it to clean up duplicates.</p>
+
+      <h2 style="font-size:26px;margin:28px 0 12px">Danger zone</h2>
+      <div class="toolbar">
+        <button class="btn-red btn-sm" id="resetAll">Clear this game's teams, videos & votes…</button>
+        ${GAME.is_default ? "" : `<button class="btn-red btn-sm" id="gDelete">Delete this game…</button>`}
+      </div>
+      ${GAME.is_default && others.length ? `<p class="muted small" style="margin-top:8px">To delete this game, first make another game the default.</p>` : ""}
+      </div>`;
     $("#tClose").onclick = () => { el.remove(); renderDJ(); };
     el.querySelectorAll("[data-dt]").forEach(b => b.onclick = async () => { if (!confirm(`Delete team "${teamName(b.dataset.dt)}" and all its videos?`)) return; await hostCall("host_delete_team", { p_id: b.dataset.dt }); draw(); });
-    $("#resetAll").onclick = async () => { if (prompt('This deletes ALL teams, videos and votes. Type RESET to confirm.') !== "RESET") return; await hostCall("host_reset_all", {}); D.played.clear(); store.set("mvs_played", "[]"); draw(); };
+    $("#resetAll").onclick = async () => { if (prompt(`This deletes ALL teams, videos and votes in "${GAME.name}". Type RESET to confirm.`) !== "RESET") return; await hostCall("host_reset_game", {}); draw(); };
+    $("#gRename").onclick = async () => { const n = prompt("New name for this game", GAME.name); if (n && n.trim()) { await hostCall("host_rename_game", { p_name: n.trim() }); draw(); } };
+    if ($("#gDefault")) $("#gDefault").onclick = async () => { if (!confirm(`Make "${GAME.name}" the default? The main link will open this game for everyone.`)) return; await hostCall("host_set_default_game", {}); draw(); };
+    if ($("#gDelete")) $("#gDelete").onclick = async () => {
+      if (prompt(`Permanently delete "${GAME.name}" and everything in it? Type DELETE to confirm.`) !== "DELETE") return;
+      if (await hostCall("host_delete_game", {})) { el.remove(); store.del("mvs_dj_game"); await switchGame((S.games.find(g => g.is_default) || S.games[0]).id); }
+    };
   };
   document.body.appendChild(el); draw();
 }
@@ -537,7 +613,7 @@ function render() {
     renderGuest();
   }
 }
-window.addEventListener("hashchange", () => { $("#screen")?.remove(); D.screen = null; render(); });
+window.addEventListener("hashchange", () => { $("#screen")?.remove(); D.screen = null; S.loaded = false; render(); refresh(); });
 render(); refresh();
 setInterval(() => { if (!document.hidden) refresh(); }, isDJ() ? 2000 : 3000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
