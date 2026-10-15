@@ -285,6 +285,9 @@ function scoreRows(rows) {
 const G = { tab: "add", pendingId: null, pendingTitle: "", busy: false, lastPhaseKey: "" };
 
 const teamKey = () => "mvs_team_" + (GAME ? GAME.id : "");
+// Once this phone has added a video in this game, switching teams goes through the DJ.
+const lockKey = () => "mvs_locked_" + (GAME ? GAME.id : "");
+const canSwitchTeam = mine => !mine.length && store.get(lockKey()) !== "1";
 function guestTeam() {
   const raw = store.get(teamKey()); if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
@@ -313,7 +316,7 @@ function renderGuest() {
   const keepInput = G.tab === "add" ? { url: $("#url")?.value, cat: $("#cat")?.value, title: $("#title")?.value } : null;
   const focusId = document.activeElement?.id;
   app.innerHTML = `<div class="wrap">${brand}
-    <div class="row small muted" style="margin:-8px 0 16px">Playing as&nbsp;<b style="color:var(--text)">${esc(team.name)}</b><button class="btn-ghost btn-sm" id="switchTeam" style="margin-left:auto">Sign off</button></div>
+    <div class="row small muted" style="margin:-8px 0 16px">Playing as&nbsp;<b style="color:var(--text)">${esc(team.name)}</b></div>
     ${body}</div>${tabs}`;
   if (keepInput) {
     if (keepInput.url != null) $("#url").value = keepInput.url;
@@ -396,7 +399,10 @@ function guestAdd() {
       <div id="previewBox"></div>
       <button class="btn-gold" id="addBtn" style="width:100%;margin-top:14px" disabled>Add to the showdown</button>
     </div>
-    <div style="margin-top:22px"><h2 style="font-size:20px">Your picks (${mine.length})</h2>${mineHtml}</div>`;
+    <div style="margin-top:22px"><h2 style="font-size:20px">Your picks (${mine.length})</h2>${mineHtml}</div>
+    <p class="small muted" style="margin-top:36px;text-align:center">${canSwitchTeam(mine)
+      ? `<button id="switchTeam" class="btn-sm" style="background:none;padding:4px;color:var(--muted);text-decoration:underline;font-weight:500">Joined the wrong team?</button>`
+      : "Joined the wrong team? Ask DJ scottbot to fix it."}</p>`;
 }
 
 function guestVote(cat, g) {
@@ -414,7 +420,11 @@ function guestVote(cat, g) {
 
 function bindGuest() {
   document.querySelectorAll(".tabs [data-tab]").forEach(b => b.onclick = () => { G.tab = b.dataset.tab; renderGuest(); window.scrollTo(0, 0); });
-  $("#switchTeam").onclick = () => { store.del(teamKey()); renderGuest(); };
+  if ($("#switchTeam")) $("#switchTeam").onclick = () => {
+    const t = guestTeam();
+    if (!confirm(`Leave ${t ? t.name : "this team"} and pick a different team?`)) return;
+    store.del(teamKey()); renderGuest(); window.scrollTo(0, 0);
+  };
   document.querySelectorAll("[data-vote]").forEach(b => b.onclick = async () => {
     const id = b.dataset.vote; const sub = S.subs.find(s => s.id === id);
     S.myVotes[sub.category] = id; renderGuest();
@@ -462,7 +472,7 @@ async function addSong() {
   document.activeElement?.blur();
   try {
     const newId = await rpc("add_submission", { p_token: token(), p_team: guestTeam().id, p_category: cat, p_url: $("#url").value.trim().slice(0, 300), p_video_id: id, p_title: title });
-    S.mySubs.add(newId); store.set("mvs_last_cat", cat);
+    S.mySubs.add(newId); store.set("mvs_last_cat", cat); store.set(lockKey(), "1");
     $("#url").value = ""; G.pendingId = null; $("#previewBox").innerHTML = "";
     await refresh(); toast(S.mySubs.size === 1 ? "First video’s in. You can do it!" : `Added to ${cat}.`);
   } catch (e) { toast(errMsg(e)); btn.disabled = false; }
