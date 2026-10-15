@@ -294,7 +294,7 @@ function renderGuest() {
   const app = $("#app");
   const brand = `<div class="brand"><img class="logo" src="favicon.svg" alt=""><div><h1>Music Video Showdown</h1><div class="sub">${esc(GAME ? GAME.name : "")}</div></div></div>`;
   if (!S.loaded) { app.innerHTML = `<div class="wrap">${brand}<p class="muted">Loading…</p></div>`; return; }
-  if (S.noGame) { app.innerHTML = `<div class="wrap">${brand}<div class="empty card"><div class="big">🤷</div><h2 style="font-size:22px;margin:8px 0">Game not found</h2><p class="muted">Check the link with your host, or <a href="${esc(baseUrl())}">go to the main game</a>.</p></div></div>`; return; }
+  if (S.noGame) { app.innerHTML = `<div class="wrap">${brand}<div class="empty card"><div class="big">🤷</div><h2 style="font-size:22px;margin:8px 0">Game not found</h2><p class="muted">This link went the way of GeoCities. Check it with your host, or <a href="${esc(baseUrl())}">go to the main game</a>.</p></div></div>`; return; }
   const team = guestTeam();
   if (!team || !S.teams.some(t => t.id === team.id)) { renderJoin(brand); return; }
 
@@ -344,7 +344,7 @@ function renderJoin(brand) {
       <h2>Join as a team</h2>
       <p class="muted" style="margin:4px 0 0">Each couple is one team. Use the same team name on both phones.</p>
       ${S.teams.length ? `<label>Already here? Tap your team</label><div>${chips}</div><label for="teamName">Or start a new team</label>` : `<label for="teamName">Team name</label>`}
-      <input id="teamName" placeholder="e.g. The Hendersons" maxlength="40" autocomplete="off">
+      <input id="teamName" placeholder="e.g. The Hendersons or Bennifer" maxlength="40" autocomplete="off">
       <button class="btn-gold" id="joinBtn" style="width:100%;margin-top:12px">Join the game</button>
     </div>
 
@@ -361,7 +361,7 @@ function renderJoin(brand) {
       <h2>Tonight's categories</h2>
       ${tapes}
     </section>
-    <p class="foot">Be kind, rewind.</p>
+    <p class="foot">Best viewed in Netscape Navigator at 800×600.</p>
   </div>`;
   G.tvPlayed = true;
   $("#joinBtn").onclick = async () => {
@@ -379,7 +379,7 @@ function guestAdd() {
   const mineHtml = mine.length ? CATEGORIES.filter(c => mine.some(s => s.category === c.name)).map(c => `
     <div class="cat-head"><h3>${esc(c.name)}</h3></div>
     ${mine.filter(s => s.category === c.name).map(s => `<div class="item"><img class="thumb" src="${thumb(s.video_id)}" alt=""><div class="grow"><div class="t">${esc(s.title)}</div></div><button class="btn-ghost btn-sm" data-del="${s.id}">Remove</button></div>`).join("")}`).join("")
-    : `<p class="muted small">Nothing yet. Your picks show up here, and only you can see who picked what.</p>`;
+    : `<p class="muted small">Nothing yet. Your picks land here, like a Top 8 only you can see.</p>`;
   return `<div class="card">
       <h2 style="font-size:22px">Add a music video</h2>
       <label for="cat">Category</label>
@@ -398,7 +398,7 @@ function guestVote(cat, g) {
   if (!cat) {
     const msg = g.phase === "playing" && g.current_category
       ? `Now playing: <b>${esc(g.current_category)}</b>. Voting opens when the round's videos are done.`
-      : "Voting opens after each round. Keep this page open.";
+      : "Voting opens after each round. Keep this tab open, like it’s 2001 and your crush might sign on.";
     return `<div class="empty card"><div class="big">📺</div><h2 style="font-size:22px;margin:8px 0">Waiting for the DJ</h2><p class="muted">${msg}</p></div>`;
   }
   const list = subsIn(cat);
@@ -413,7 +413,7 @@ function bindGuest() {
   document.querySelectorAll("[data-vote]").forEach(b => b.onclick = async () => {
     const id = b.dataset.vote; const sub = S.subs.find(s => s.id === id);
     S.myVotes[sub.category] = id; renderGuest();
-    try { await rpc("cast_vote", { p_token: token(), p_submission: id }); toast("Vote locked in 🍻"); } catch (e) { toast(errMsg(e)); refresh(); }
+    try { await rpc("cast_vote", { p_token: token(), p_submission: id }); toast("Final answer. Locked in."); } catch (e) { toast(errMsg(e)); refresh(); }
   });
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
     if (!confirm("Remove this video?")) return;
@@ -437,7 +437,7 @@ async function onUrl(val, silent) {
   if (!id) { G.pendingId = null; box.innerHTML = val.trim() ? `<p class="small" style="color:var(--red);margin-top:8px">That doesn't look like a YouTube link.</p>` : ""; btn.disabled = true; return; }
   if (id === G.pendingId && $("#title")) { btn.disabled = false; return; }
   G.pendingId = id;
-  box.innerHTML = `<div class="preview"><img class="thumb" src="${thumb(id)}" alt=""><div class="grow muted small">Looking up the title…</div></div>`;
+  box.innerHTML = `<div class="preview"><img class="thumb" src="${thumb(id)}" alt=""><div class="grow muted small">Connecting at 56k…</div></div>`;
   let title = "";
   try {
     const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`);
@@ -631,7 +631,7 @@ function drawScreen() {
   } else if (D.screen === "results") {
     const ranked = rankRound(D.cat).filter(s => s.votes > 0);
     const top = ranked.filter(s => s.rank <= 2);
-    el.innerHTML = `${close}<div class="kicker">Results · ${esc(D.cat)}</div><h2>And the winner is…</h2>
+    el.innerHTML = `${close}<div class="kicker">Results · ${esc(D.cat)}</div><h2>Coming in at number one…</h2>
       <div class="podium">${top.length ? top.map(s => `<div class="pod ${s.rank === 1 ? "p1" : ""}"><div class="place">${s.rank === 1 ? "1st" : "2nd"}</div><img src="${thumb(s.video_id)}" alt=""><div><div class="t">${esc(s.title)}</div><div class="team">${esc(teamName(s.team_id))}</div><div class="muted">${s.votes} vote${s.votes === 1 ? "" : "s"}</div></div><div class="pts">+${s.points}</div></div>`).join("") : `<p class="muted" style="font-size:24px">No votes were cast.</p>`}</div>
       <div style="margin-top:4vh"><button class="btn-gold" id="toScores" style="font-size:clamp(16px,1.6vw,22px)">🏆 Show scoreboard</button></div>`;
     $("#toScores").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
