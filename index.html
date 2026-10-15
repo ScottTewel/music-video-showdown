@@ -169,6 +169,8 @@ a{color:var(--gold)}
 .tape:nth-of-type(5n+4){background:var(--pink);color:#fff}
 .tape:nth-of-type(5n+5){background:var(--lime)}
 .tape:nth-of-type(5n+4)::after{border-color:rgba(255,255,255,.4)}
+#catsScreen .score-row,#teamsScreen .score-row{font-size:15px;padding:12px 14px}
+#catsScreen .score-row b{font-size:17px}
 .foot{margin-top:28px;text-align:center;font-size:14px;color:var(--muted)}
 </style>
 </head>
@@ -183,18 +185,20 @@ const SUPABASE_URL = "https://ftqjtfzaqgzwtlhwkvee.supabase.co";
 const SUPABASE_KEY = "sb_publishable_3p9i9j7fe7ZwIben7Oshlw_BwirUtoG";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   { name: "Bands We Miss", desc: "Performers and groups who broke up or are no longer with us" },
   { name: "Best of the ’90s", desc: "Songs from high school" },
   { name: "Best of the ’00s", desc: "College highlights" },
   { name: "The Greatest Live Performances", desc: "You'd have done anything to have been there" },
-  { name: "Dance Floor", desc: "Best songs to dance to" },
   { name: "Let It Out", desc: "Songs that get that emotion out" },
   { name: "Pump up Music", desc: "Your #1 song on the Pregame Playlist" },
   { name: "Suburban Milf Shake", desc: "The top beats to get suburban moms shaking their booties" },
   { name: "Bump and Grind", desc: "Videos that get us hot and bothered" },
   { name: "Wildcard", desc: "Anything goes. Read the room and add to the vibe" },
 ];
+// Each game carries its own category list (edited by the DJ); this is the fallback.
+const cats = () => (GAME && Array.isArray(GAME.categories) && GAME.categories.length) ? GAME.categories : DEFAULT_CATEGORIES;
+const catDesc = name => (cats().find(c => c.name === name) || {}).desc || "";
 
 // ---------- helpers ----------
 const $ = (s, el = document) => el.querySelector(s);
@@ -234,7 +238,7 @@ function pickGame() {
   return slug ? S.games.find(g => g.slug === slug.toLowerCase()) || null : def;
 }
 async function loadAll() {
-  const gq = await sb.from("games").select("id,slug,name,is_default,created_at").order("created_at");
+  const gq = await sb.from("games").select("id,slug,name,is_default,created_at,categories").order("created_at");
   if (gq.error) throw gq.error;
   S.games = gq.data;
   const prev = GAME && GAME.id;
@@ -269,7 +273,7 @@ function rankRound(cat) {
 }
 function scoreboard() {
   const pts = Object.fromEntries(S.teams.map(t => [t.id, 0]));
-  for (const c of CATEGORIES) if (S.rounds[c.name] === "closed") for (const s of rankRound(c.name)) if (s.points) pts[s.team_id] = (pts[s.team_id] || 0) + s.points;
+  for (const cat of Object.keys(S.rounds)) if (S.rounds[cat] === "closed") for (const s of rankRound(cat)) if (s.points) pts[s.team_id] = (pts[s.team_id] || 0) + s.points;
   const rows = S.teams.map(t => ({ name: t.name, id: t.id, pts: pts[t.id] || 0 })).sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
   for (const r of rows) r.rank = 1 + rows.filter(o => o.pts > r.pts).length;
   return rows;
@@ -333,7 +337,7 @@ function teamPlaceholder() { return _placeholder ||= MOVIE_FAMILIES[Math.floor(M
 
 function renderJoin(brand) {
   const chips = S.teams.map(t => `<button class="chip" data-join="${esc(t.id)}">${esc(t.name)}</button>`).join("");
-  const tapes = CATEGORIES.map(c => `<div class="tape"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span></div>`).join("");
+  const tapes = cats().map(c => `<div class="tape"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span></div>`).join("");
   $("#app").innerHTML = `<div class="wrap">
     <header class="hero">
       <div class="tv" role="img" aria-label="A retro TV showing the words Music Video Showdown">
@@ -382,9 +386,9 @@ function renderJoin(brand) {
 function setTeam(id) { store.set(teamKey(), JSON.stringify({ id, name: teamName(id) })); renderGuest(); }
 
 function guestAdd() {
-  const opts = CATEGORIES.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${subsIn(c.name).length})</option>`).join("");
+  const opts = cats().map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${subsIn(c.name).length})</option>`).join("");
   const mine = S.subs.filter(s => S.mySubs.has(s.id));
-  const mineHtml = mine.length ? CATEGORIES.filter(c => mine.some(s => s.category === c.name)).map(c => `
+  const mineHtml = mine.length ? cats().filter(c => mine.some(s => s.category === c.name)).map(c => `
     <div class="cat-head"><h3>${esc(c.name)}</h3></div>
     ${mine.filter(s => s.category === c.name).map(s => `<div class="item"><img class="thumb" src="${thumb(s.video_id)}" alt=""><div class="grow"><div class="t">${esc(s.title)}</div></div><button class="btn-ghost btn-sm" data-del="${s.id}">Remove</button></div>`).join("")}`).join("")
     : `<p class="muted small">Nothing yet. Your picks land here, like a Top 8 only you can see.</p>`;
@@ -436,8 +440,8 @@ function bindGuest() {
   });
   const cat = $("#cat");
   if (cat) {
-    const lastCat = store.get("mvs_last_cat"); if (lastCat && !cat.dataset.touched && CATEGORIES.some(c => c.name === lastCat) && !$("#url").value) cat.value = lastCat;
-    const showDesc = () => { $("#catDesc").textContent = (CATEGORIES.find(c => c.name === cat.value) || {}).desc || ""; };
+    const lastCat = store.get("mvs_last_cat"); if (lastCat && !cat.dataset.touched && cats().some(c => c.name === lastCat) && !$("#url").value) cat.value = lastCat;
+    const showDesc = () => { $("#catDesc").textContent = catDesc(cat.value); };
     showDesc(); cat.onchange = () => { store.set("mvs_last_cat", cat.value); showDesc(); };
     const url = $("#url");
     url.oninput = () => onUrl(url.value);
@@ -490,7 +494,7 @@ async function loadMine() {
 // =====================================================================
 // DJ
 // =====================================================================
-const D = { pin: store.get("mvs_pin"), cat: CATEGORIES[0].name, played: new Set(JSON.parse(store.get("mvs_played") || "[]")), showPickers: false, playing: null, startedAt: 0, screen: null };
+const D = { pin: store.get("mvs_pin"), cat: null, played: new Set(JSON.parse(store.get("mvs_played") || "[]")), showPickers: false, playing: null, startedAt: 0, screen: null };
 
 function renderDJ() {
   const app = $("#app");
@@ -504,6 +508,7 @@ function renderDJ() {
   if (!S.loaded) { app.innerHTML = `<div class="wrap"><p class="muted">Loading…</p></div>`; return; }
   if (D.playing) return; // don't redraw under the video
   if (S.noGame) { app.innerHTML = `<div class="wrap"><div class="card"><h2>No games yet</h2><button class="btn-gold" id="newGame" style="margin-top:12px">+ New game</button></div></div>`; $("#newGame").onclick = newGame; return; }
+  if (!cats().some(c => c.name === D.cat)) D.cat = cats()[0].name;
   const gameOpts = S.games.map(g => `<option value="${g.id}" ${g.id === GAME.id ? "selected" : ""}>${g.is_default ? "★ " : ""}${esc(g.name)}</option>`).join("");
   const gameBox = `<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)">
       <label for="gameSel" style="margin-top:0">Game</label>
@@ -512,7 +517,7 @@ function renderDJ() {
       <div class="toolbar" style="margin-top:10px"><button class="btn-ghost btn-sm" id="copyLink">🔗 Copy guest link</button><button class="btn-ghost btn-sm" id="newGame">+ New game</button></div>
     </div>`;
 
-  const side = CATEGORIES.map(c => {
+  const side = cats().map(c => {
     const st = S.rounds[c.name]; const n = subsIn(c.name).length;
     const badge = st === "voting" ? `<span class="badge live">LIVE</span>` : st === "closed" ? `<span class="badge done">✓ done</span>` : `<span class="badge">${n}</span>`;
     return `<button class="catbtn ${D.cat === c.name ? "on" : ""}" data-cat="${esc(c.name)}"><span>${esc(c.name)}</span>${badge}</button>`;
@@ -525,7 +530,7 @@ function renderDJ() {
         ${D.showPickers ? `<div class="small" style="color:var(--gold)">${esc(teamName(s.team_id))}</div>` : ""}
         ${st === "closed" || st === "voting" ? `<div class="small muted">${votesFor(s.id)} vote${votesFor(s.id) === 1 ? "" : "s"}</div>` : ""}
         <div class="toolbar" style="margin-top:auto"><button class="btn-gold btn-sm" data-play="${s.id}">▶ Play</button>
-          <select class="btn-sm" data-move="${s.id}" style="width:auto;padding:6px 8px;font-size:13px"><option value="">Move…</option>${CATEGORIES.filter(c => c.name !== cat).map(c => `<option>${esc(c.name)}</option>`).join("")}</select>
+          <select class="btn-sm" data-move="${s.id}" style="width:auto;padding:6px 8px;font-size:13px"><option value="">Move…</option>${cats().filter(c => c.name !== cat).map(c => `<option>${esc(c.name)}</option>`).join("")}</select>
           <button class="btn-ghost btn-sm" data-rm="${s.id}" title="Delete">🗑</button></div></div></div>`).join("");
 
   let roundBtns = "";
@@ -538,6 +543,7 @@ function renderDJ() {
       <div class="brand" style="margin-top:0"><img class="logo" src="favicon.svg" alt=""><div><h1 style="font-size:19px">DJ booth</h1><div class="sub">${S.subs.length} videos · ${S.teams.length} teams</div></div></div>
       ${gameBox}
       ${side}
+      <button class="btn-ghost btn-sm" id="editCats" style="width:100%;margin-top:6px">✎ Add, rename or remove categories</button>
       <div style="border-top:1px solid var(--line);margin:14px 0;padding-top:14px;display:grid;gap:8px">
         <button class="btn-gold" id="scoresBtn">🏆 Scoreboard on TV</button>
         <button class="btn-ghost" id="qrBtn">📱 Join QR code on TV</button>
@@ -547,9 +553,12 @@ function renderDJ() {
       </div>
     </aside>
     <main class="main">
-      <div class="row" style="flex-wrap:wrap;gap:14px"><div class="grow"><div class="muted small" style="text-transform:uppercase;letter-spacing:.1em;font-weight:700">Category</div><h2 style="font-size:34px">${esc(cat)}</h2><div class="muted">${esc((CATEGORIES.find(c => c.name === cat) || {}).desc || "")}</div></div>
+      <div class="row" style="flex-wrap:wrap;gap:14px"><div class="grow"><div class="muted small" style="text-transform:uppercase;letter-spacing:.1em;font-weight:700">Category</div><h2 style="font-size:34px">${esc(cat)}</h2><div class="muted">${esc(catDesc(cat))}</div></div>
         <div class="toolbar">${roundBtns}</div></div>
-      ${list.length < 4 ? `<p class="small" style="color:var(--gold);margin-top:12px">${list.length} of 4+ videos submitted.</p>` : ""}
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        ${list.length < 4 ? `<span class="small" style="color:var(--gold)">${list.length} of 4+ videos submitted.</span>` : ""}
+        ${list.length && cats().length > 1 ? `<select id="moveAll" style="width:auto;padding:7px 10px;font-size:14px;margin-left:auto"><option value="">Move all ${list.length} video${list.length === 1 ? "" : "s"} to…</option>${cats().filter(c => c.name !== cat).map(c => `<option>${esc(c.name)}</option>`).join("")}</select>` : ""}
+      </div>
       ${list.length ? `<div class="vgrid">${cards}</div>` : `<div class="empty"><div class="big">🎬</div><p class="muted">No videos in this category yet.</p></div>`}
     </main></div>`;
   bindDJ();
@@ -566,6 +575,14 @@ function bindDJ() {
   $("#scoresBtn").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
   $("#qrBtn").onclick = () => { D.screen = "join"; drawScreen(); };
   $("#teamsBtn").onclick = manageTeams;
+  $("#editCats").onclick = editCategories;
+  if ($("#moveAll")) $("#moveAll").onchange = async e => {
+    const to = e.target.value; if (!to) return;
+    const n = subsIn(D.cat).length;
+    if (!confirm(`Move all ${n} video${n === 1 ? "" : "s"} from "${D.cat}" to "${to}"?${S.rounds[D.cat] ? " Votes from this round will be cleared." : ""}`)) { e.target.value = ""; return; }
+    const from = D.cat;
+    if (await hostCall("host_move_category", { p_from: from, p_to: to })) { D.cat = to; renderDJ(); toast(`Moved ${n} to ${to}`); }
+  };
   $("#gameSel").onchange = e => switchGame(e.target.value);
   $("#newGame").onclick = newGame;
   $("#copyLink").onclick = async () => {
@@ -583,7 +600,7 @@ function bindDJ() {
 }
 
 async function switchGame(id) {
-  store.set("mvs_dj_game", id); D.cat = CATEGORIES[0].name; D.screen = null; $("#screen")?.remove();
+  store.set("mvs_dj_game", id); D.cat = null; D.screen = null; $("#screen")?.remove();
   document.activeElement?.blur(); lastSnap = "";
   S.loaded = false; renderDJ(); await refresh();
   toast("Switched to " + GAME.name);
@@ -596,8 +613,8 @@ async function newGame() {
 }
 async function hostCall(fn, args) {
   document.activeElement?.blur(); // e.g. the "Move…" dropdown, so the result can redraw
-  const needsGame = ["host_set_round", "host_reset_game", "host_set_default_game", "host_delete_game", "host_rename_game"].includes(fn);
-  try { await rpc(fn, { p_pin: D.pin, ...(needsGame ? { p_game: GAME.id } : {}), ...args }); await refresh(); return true; }
+  const needsGame = ["host_set_round", "host_reset_game", "host_set_default_game", "host_delete_game", "host_rename_game", "host_save_categories", "host_move_category", "host_rename_category"].includes(fn);
+  try { await rpc(fn, { p_pin: D.pin, ...(needsGame ? { p_game: GAME.id } : {}), ...args }); await loadAll(); lastSnap = snapshot(); render(); return true; }
   catch (e) { toast(errMsg(e)); if (/PIN/i.test(errMsg(e))) { store.del("mvs_pin"); D.pin = null; renderDJ(); } return false; }
 }
 async function setPhase(phase, cat, nowPlaying = null) {
@@ -651,10 +668,83 @@ function drawScreen() {
       <div style="margin-top:4vh"><button class="btn-gold" id="toScores" style="font-size:clamp(16px,1.6vw,22px)">🏆 Show scoreboard</button></div>`;
     $("#toScores").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
   } else if (D.screen === "scoreboard") {
-    const done = CATEGORIES.filter(c => S.rounds[c.name] === "closed").length;
+    const done = Object.values(S.rounds).filter(v => v === "closed").length;
     el.innerHTML = `${close}<div class="kicker">After ${done} round${done === 1 ? "" : "s"}</div><h2 style="margin-bottom:3vh">Scoreboard</h2><div style="max-width:900px">${scoreRows(scoreboard())}</div>`;
   }
   $("#closeScreen").onclick = () => { el.remove(); D.screen = null; renderDJ(); };
+}
+
+// ---------- category editor ----------
+function editCategories() {
+  const el = document.createElement("div"); el.className = "screen"; el.id = "catsScreen";
+  let removing = null; // name of the category being removed that still has videos
+  const save = list => hostCall("host_save_categories", { p_categories: list.map(c => ({ name: c.name, desc: c.desc || "" })) });
+  const draw = () => {
+    const list = cats();
+    const rows = list.map((c, i) => {
+      const n = subsIn(c.name).length;
+      const others = list.filter(o => o.name !== c.name);
+      const def = others.find(o => o.name === "Wildcard") ? "Wildcard" : (others[0] || {}).name;
+      return `<div class="score-row" style="align-items:flex-start;flex-wrap:wrap">
+        <div class="grow" style="min-width:200px"><b>${esc(c.name)}</b><div class="muted small">${esc(c.desc || "No description")} · ${n} video${n === 1 ? "" : "s"}${S.rounds[c.name] ? ` · round ${S.rounds[c.name] === "voting" ? "live" : "done"}` : ""}</div></div>
+        <div class="toolbar">
+          <button class="btn-ghost btn-sm" data-up="${i}" ${i === 0 ? "disabled" : ""} aria-label="Move up">↑</button>
+          <button class="btn-ghost btn-sm" data-down="${i}" ${i === list.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button>
+          <button class="btn-ghost btn-sm" data-edit="${i}">Rename</button>
+          <button class="btn-red btn-sm" data-remove="${i}" ${list.length === 1 ? "disabled" : ""}>Remove</button>
+        </div>
+        ${removing === c.name ? `<div class="row" style="width:100%;margin-top:10px;flex-wrap:wrap">
+          <span class="small">Move its ${n} video${n === 1 ? "" : "s"} to</span>
+          <select id="rmTarget" style="width:auto;padding:7px 10px;font-size:14px">${others.map(o => `<option ${o.name === def ? "selected" : ""}>${esc(o.name)}</option>`).join("")}</select>
+          <button class="btn-red btn-sm" id="rmGo">Move & remove</button><button class="btn-ghost btn-sm" id="rmCancel">Cancel</button></div>` : ""}
+      </div>`;
+    }).join("");
+    el.innerHTML = `<button class="btn-ghost btn-sm screen-close" id="cClose">✕ Done</button>
+      <div style="max-width:720px">
+        <h2 style="font-size:34px;margin-bottom:4px">Categories</h2>
+        <p class="muted" style="margin:0 0 18px">For ${esc(GAME.name)}. Changes show up on everyone's phone within a few seconds.</p>
+        ${rows}
+        <div class="card" style="margin-top:22px">
+          <h2 style="font-size:20px">Add a category</h2>
+          <label for="newCatName">Name</label><input id="newCatName" maxlength="80" placeholder="e.g. One-Hit Wonders" autocomplete="off">
+          <label for="newCatDesc">Description</label><input id="newCatDesc" maxlength="200" placeholder="e.g. They came, they charted, they vanished" autocomplete="off">
+          <button class="btn-gold" id="addCat" style="margin-top:12px">Add category</button>
+          <p class="muted small" style="margin:8px 0 0">New categories go just above Wildcard.</p>
+        </div>
+      </div>`;
+    $("#cClose").onclick = () => { el.remove(); renderDJ(); };
+    const move = async (i, d) => { const l = [...cats()]; [l[i], l[i + d]] = [l[i + d], l[i]]; await save(l); draw(); };
+    el.querySelectorAll("[data-up]").forEach(b => b.onclick = () => move(+b.dataset.up, -1));
+    el.querySelectorAll("[data-down]").forEach(b => b.onclick = () => move(+b.dataset.down, 1));
+    el.querySelectorAll("[data-edit]").forEach(b => b.onclick = async () => {
+      const c = cats()[+b.dataset.edit];
+      const name = prompt("Category name", c.name); if (name == null || !name.trim()) return;
+      const desc = prompt("Description", c.desc || ""); if (desc == null) return;
+      if (await hostCall("host_rename_category", { p_old: c.name, p_new: name.trim(), p_desc: desc.trim() })) { if (D.cat === c.name) D.cat = name.trim(); draw(); }
+    });
+    el.querySelectorAll("[data-remove]").forEach(b => b.onclick = async () => {
+      const c = cats()[+b.dataset.remove];
+      if (subsIn(c.name).length) { removing = c.name; draw(); return; }
+      if (!confirm(`Remove "${c.name}"?`)) return;
+      await save(cats().filter(x => x.name !== c.name)); draw();
+    });
+    if ($("#rmCancel")) $("#rmCancel").onclick = () => { removing = null; draw(); };
+    if ($("#rmGo")) $("#rmGo").onclick = async () => {
+      const from = removing, to = $("#rmTarget").value;
+      if (!(await hostCall("host_move_category", { p_from: from, p_to: to }))) return;
+      if (await save(cats().filter(x => x.name !== from))) { removing = null; toast(`Moved videos to ${to} and removed ${from}`); }
+      draw();
+    };
+    $("#addCat").onclick = async () => {
+      const name = $("#newCatName").value.trim(), desc = $("#newCatDesc").value.trim();
+      if (!name) return toast("Give the category a name");
+      if (cats().some(c => c.name.toLowerCase() === name.toLowerCase())) return toast("There's already a category with that name");
+      const l = [...cats()]; const w = l.findIndex(c => c.name === "Wildcard");
+      l.splice(w === -1 ? l.length : w, 0, { name, desc });
+      if (await save(l)) { toast(`Added ${name}`); draw(); }
+    };
+  };
+  document.body.appendChild(el); draw();
 }
 
 function manageTeams() {
@@ -725,7 +815,7 @@ async function refresh() {
 function render() {
   if (isDJ()) {
     if (D.screen && $("#screen")) { drawScreen(); return; }
-    if ($("#teamsScreen")) return;
+    if ($("#teamsScreen") || $("#catsScreen")) return;
     renderDJ();
   } else {
     // auto-jump to the vote tab when a round opens
