@@ -119,17 +119,16 @@ const SUPABASE_KEY = "sb_publishable_3p9i9j7fe7ZwIben7Oshlw_BwirUtoG";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
 const CATEGORIES = [
-  { name: "We Miss You", desc: "Bands or performers we miss most (passed away or broken up)" },
-  { name: "Overtly Sensual", desc: "You know the ones" },
-  { name: "Best of the '90s", desc: "Any version of the video. Live performances count" },
-  { name: "Best of the 2000s", desc: "Any version of the video" },
+  { name: "Bands We Miss", desc: "Performers and groups who broke up or are no longer with us" },
+  { name: "Best of the ’90s", desc: "Songs from high school" },
+  { name: "Best of the ’00s", desc: "College highlights" },
+  { name: "The Greatest Live Performances", desc: "You'd have done anything to have been there" },
   { name: "Dance Floor", desc: "Best songs to dance to" },
-  { name: "The Ex Files", desc: "Songs that remind you of an ex" },
-  { name: "Let It Out", desc: "Songs that let you emote or get frustration out" },
-  { name: "Suburban Mom Shake", desc: "Most likely to get suburban moms to shake their booties" },
-  { name: "Victory Lap", desc: "Best song to play after a sports victory" },
-  { name: "Walk-Up Song", desc: "Best walk-up songs" },
-  { name: "Wildcard", desc: "Anything goes. Added during the party" },
+  { name: "Let It Out", desc: "Songs that get that emotion out" },
+  { name: "Pump up Music", desc: "Your #1 song on the Pregame Playlist" },
+  { name: "Suburban Milf Shake", desc: "The top beats to get suburban moms shaking their booties" },
+  { name: "Bump and Grind", desc: "Videos that get us hot and bothered" },
+  { name: "Wildcard", desc: "Anything goes. Read the room and add to the vibe" },
 ];
 
 // ---------- helpers ----------
