@@ -360,6 +360,7 @@ async function addSong() {
   if (!title) return toast("Add the song name");
   if (S.subs.some(s => s.category === cat && s.video_id === id)) return toast("That video is already in this category");
   const btn = $("#addBtn"); btn.disabled = true;
+  document.activeElement?.blur();
   try {
     const newId = await rpc("add_submission", { p_token: token(), p_team: guestTeam().id, p_category: cat, p_url: $("#url").value.trim().slice(0, 300), p_video_id: id, p_title: title });
     S.mySubs.add(newId); store.set("mvs_last_cat", cat);
@@ -474,6 +475,7 @@ function bindDJ() {
 
 async function switchGame(id) {
   store.set("mvs_dj_game", id); D.cat = CATEGORIES[0].name; D.screen = null; $("#screen")?.remove();
+  document.activeElement?.blur(); lastSnap = "";
   S.loaded = false; renderDJ(); await refresh();
   toast("Switched to " + GAME.name);
 }
@@ -484,6 +486,7 @@ async function newGame() {
   catch (e) { toast(errMsg(e)); }
 }
 async function hostCall(fn, args) {
+  document.activeElement?.blur(); // e.g. the "Move…" dropdown, so the result can redraw
   const needsGame = ["host_set_round", "host_reset_game", "host_set_default_game", "host_delete_game", "host_rename_game"].includes(fn);
   try { await rpc(fn, { p_pin: D.pin, ...(needsGame ? { p_game: GAME.id } : {}), ...args }); await refresh(); return true; }
   catch (e) { toast(errMsg(e)); if (/PIN/i.test(errMsg(e))) { store.del("mvs_pin"); D.pin = null; renderDJ(); } return false; }
@@ -589,11 +592,23 @@ function manageTeams() {
 // =====================================================================
 const isDJ = () => location.hash.replace("#", "").toLowerCase() === "dj";
 let refreshing = false;
+let lastSnap = "";
+// Polling only redraws when the data actually changed, and never while someone
+// has a dropdown open or is typing (a redraw would close the dropdown / steal the click).
+const snapshot = () => JSON.stringify([GAME, S.games, S.teams, S.subs, S.rounds, S.tallies, S.game, S.myVotes, [...S.mySubs].sort(), S.noGame]);
+function inUse() {
+  const a = document.activeElement;
+  return !!a && (a.tagName === "SELECT" || a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && !["checkbox", "radio", "button", "submit"].includes(a.type)));
+}
 async function refresh() {
   if (refreshing) return; refreshing = true;
   try {
     await loadAll();
     if (!isDJ()) await loadMine();
+    const snap = snapshot();
+    if (snap === lastSnap) return;   // nothing new: leave the page alone
+    if (inUse()) return;             // try again on the next poll
+    lastSnap = snap;
     render();
   } catch (e) { console.error(e); if (!S.loaded) $("#app").innerHTML = `<div class="wrap"><div class="card"><h2>Can't reach the game</h2><p class="muted">${esc(errMsg(e))}</p></div></div>`; }
   finally { refreshing = false; }
@@ -608,12 +623,10 @@ function render() {
     const votingCat = Object.keys(S.rounds).find(c => S.rounds[c] === "voting") || "";
     if (votingCat && votingCat !== G.lastPhaseKey && guestTeam()) G.tab = "vote";
     G.lastPhaseKey = votingCat;
-    const typing = ["url", "title", "teamName"].includes(document.activeElement?.id);
-    if (typing && G.tab === "add") return; // don't redraw while someone types
     renderGuest();
   }
 }
-window.addEventListener("hashchange", () => { $("#screen")?.remove(); D.screen = null; S.loaded = false; render(); refresh(); });
+window.addEventListener("hashchange", () => { $("#screen")?.remove(); D.screen = null; S.loaded = false; lastSnap = ""; render(); refresh(); });
 render(); refresh();
 setInterval(() => { if (!document.hidden) refresh(); }, isDJ() ? 2000 : 3000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
