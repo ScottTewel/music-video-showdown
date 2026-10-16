@@ -1,0 +1,5 @@
+project_id = "music-video-showdown"
+
+# Phones call this with the publishable key, which isn't a JWT.
+[functions.yt-search]
+verify_jwt = false
