@@ -627,7 +627,7 @@ function playVideo(id) {
   setPhase("playing", s.category, id);
   const list = subsIn(s.category); const idx = list.findIndex(x => x.id === id);
   const el = document.createElement("div"); el.className = "stage"; el.id = "stage";
-  el.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${s.video_id}?autoplay=1&rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+  el.innerHTML = `<iframe src="https://www.youtube.com/embed/${s.video_id}?autoplay=1&rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
     <div class="stagebar"><span class="muted small">${esc(s.category)} · ${idx + 1} of ${list.length}</span><span id="timer" class="display" style="margin-left:12px;font-size:20px">0:00</span>
       <span class="grow"></span>
       <a class="btn-ghost btn-sm" style="text-decoration:none;color:var(--text);border-radius:9px" href="https://www.youtube.com/watch?v=${s.video_id}" target="_blank" rel="noopener">Won't play? Open on YouTube ↗</a>
