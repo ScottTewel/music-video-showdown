@@ -174,7 +174,7 @@ a{color:var(--gold)}
 .how li::before{content:counter(step);font-family:var(--display);font-size:22px;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);color:var(--gold);border:2px solid var(--line)}
 .how b{display:block;font-size:17px}
 .how p{margin:2px 0 0;color:var(--muted);text-wrap:balance}
-.shelf{margin-top:34px}
+.shelf{margin-top:34px;container-type:inline-size}
 /* Tapes are real 3D boxes (front spine + lid + end) in one preserve-3d stack, tilted like a product photo. */
 .stack{--D:150px;
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .2 -.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -182,12 +182,12 @@ a{color:var(--gold)}
   position:relative;margin:30px 22px 26px;transform:rotateX(-10deg) rotateY(-1deg);transform-style:preserve-3d}
 .stack::after{content:"";position:absolute;left:-4%;right:-10%;bottom:0;height:calc(var(--D) + 70px);transform-origin:50% 100%;transform:translateZ(40px) rotateX(90deg);background:radial-gradient(closest-side,rgba(3,1,12,.8),rgba(3,1,12,.35) 60%,transparent);filter:blur(6px);pointer-events:none}
 .tape{--x:0px;--z:0px;--ink:var(--gold-ink);--ca:var(--pink);--cb:var(--cyan);--snap:cubic-bezier(.16,1,.3,1);--rib:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 1px,transparent 1px 3px);
-  position:relative;width:calc(100% - 16px);margin-left:var(--x);transform-style:preserve-3d;transform-origin:50% 50% calc(var(--D) / -2);translate:0 0 var(--z);rotate:y var(--yaw,0deg);
+  position:relative;width:calc(100% - 16px);margin-left:var(--x);transform-style:preserve-3d;transform-origin:50% 50% calc(var(--D) / -2);translate:0 0 var(--z);rotate:y calc(var(--yaw,0deg) * var(--yk,1));
   transition:translate .32s var(--snap),rotate .32s var(--snap)}
 .front{position:relative;isolation:isolate;padding:6px 24px;border-radius:2px;
   background:var(--grain),
     linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 13%,rgba(0,0,0,.25) 13.5%,transparent 16%,transparent 85%,rgba(255,255,255,.06) 85.5%,rgba(0,0,0,.4)),
-    var(--rib) 6px 50%/13px calc(100% - 18px) no-repeat,var(--rib) right 6px top 50%/13px calc(100% - 18px) no-repeat,var(--shell,#0c0a19);
+    var(--rib) var(--ribx,6px) 50%/var(--ribw,13px) calc(100% - 18px) no-repeat,var(--rib) right var(--ribx,6px) top 50%/var(--ribw,13px) calc(100% - 18px) no-repeat,var(--shell,#0c0a19);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.85),inset 1px 0 0 rgba(255,255,255,.07)}
 .f-top,.f-side,.f-left{position:absolute;pointer-events:none;backface-visibility:hidden}
 .f-top{left:0;right:0;bottom:100%;height:var(--D);transform-origin:50% 100%;transform:rotateX(90deg);border-radius:2px;
@@ -212,10 +212,9 @@ a{color:var(--gold)}
     repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 4px) right 6px top 0/22px 100% no-repeat,
     #08061a;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(62,232,255,.5)}
-@media (max-width:420px){.stack{--D:110px;margin-inline:16px}}
-.txt{flex:1;min-width:0;padding:6px 12px 8px}
-.lab b{display:block;font:400 calc(20px * var(--hs,1))/24px var(--hand);letter-spacing:.01em;rotate:var(--tilt,0deg);transform-origin:left center}
-.lab .d{display:block;font-size:13px;opacity:.82;line-height:18px}
+.txt{flex:1;min-width:0;min-height:var(--txth,auto);display:flex;flex-direction:column;justify-content:center;padding:6px 12px 8px}
+.lab b{display:block;font:400 calc(20px * var(--hs,1))/24px var(--hand);white-space:nowrap;letter-spacing:.01em;rotate:var(--tilt,0deg);transform-origin:left center}
+.lab .d{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:13px;opacity:.82;line-height:18px}
 .p-ruled .txt{background:repeating-linear-gradient(180deg,transparent 0 17px,var(--rule) 17px 18px) 0 4px}
 .p-grid .txt{background:linear-gradient(90deg,var(--rule) 1px,transparent 1px) 0 0/7px 7px,linear-gradient(var(--rule) 1px,transparent 1px) 0 0/7px 7px}
 .lab{position:relative;display:flex;align-items:stretch;border-radius:2px;color:var(--ink);--rule:color-mix(in srgb,var(--ink) 14%,transparent);
@@ -252,10 +251,27 @@ a{color:var(--gold)}
 .mtape{position:absolute;z-index:2;width:46px;height:14px;background:rgba(238,226,190,.9);pointer-events:none;clip-path:polygon(2% 12%,0 0,97% 6%,100% 0,98% 45%,100% 100%,96% 90%,4% 100%,0 86%,3% 50%)}
 .mtape.a{top:1px;right:30px;rotate:5deg}
 .mtape.b{bottom:1px;left:34px;rotate:-4deg}
-@media (max-width:420px){
-  .b-vhs .tmark{width:40px}
-  .b-vhs .tmark svg{width:26px;height:13px}
-  .b-scotch .tmark,.b-scotch-eg .tmark,.b-maxell .tmark,.b-maxell-gx .tmark{width:44px;font-size:11px}
+/* Phones: same shell proportions, slimmer chrome so the label keeps its width. */
+@container (max-width:500px){
+  .stack{--D:84px;--yk:.55;margin:22px 8px 18px}
+  .tape{width:calc(100% - 10px);--ribx:4px;--ribw:8px}
+  .front{padding:5px 15px}
+  .txt{padding:4px 8px 5px}
+  .lab b{font-size:calc(17px * var(--hs,1));line-height:21px}
+  .lab .d{font-size:12px;line-height:15px}
+  .b-vhs .tmark{width:34px}
+  .b-vhs .tmark svg{width:24px;height:12px}
+  .b-scotch .tmark,.b-scotch-eg .tmark,.b-maxell .tmark,.b-maxell-gx .tmark{width:38px;font-size:10px}
+  .tmark small{font-size:6px;letter-spacing:.02em}
+  .b-cassette .tmark{width:13px}
+  .b-cassette .vc{font-size:6px;letter-spacing:.14em}
+  .stk{width:11px;padding:3px 0;font-size:8px;line-height:11px}
+  .stk.l,.num.l{left:2px}
+  .stk.r,.num.r{right:2px}
+  .num{top:4px;width:11px;height:11px;font-size:8px;line-height:11px}
+  .mtape{width:34px;height:11px}
+  .mtape.a{right:20px}
+  .mtape.b{left:20px}
 }
 .lab::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .18s;
   background:linear-gradient(180deg,transparent 0 40%,rgba(255,255,255,.6) 47%,rgba(255,255,255,.18) 53%,rgba(11,7,38,.2) 55%,transparent 58%) 0 0/100% 320% no-repeat,
@@ -280,7 +296,7 @@ a{color:var(--gold)}
 @keyframes jitter{0%{transform:translateX(-3px) skewX(-8deg)}30%{transform:translateX(2px)}60%{transform:translateX(-1px) skewX(4deg)}100%{transform:none}}
 @media (prefers-reduced-motion:reduce){
   .tape{transition:none}
-  .tape:hover{translate:0 0 var(--z);rotate:y var(--yaw,0deg)}
+  .tape:hover{translate:0 0 var(--z);rotate:y calc(var(--yaw,0deg) * var(--yk,1))}
   .tape:hover .lab::before,.tape:hover b{animation:none}
 }
 #catsScreen .score-row,#teamsScreen .score-row{font-size:15px;padding:12px 14px}
@@ -495,6 +511,21 @@ function tapesHtml() {
   }).join("");
 }
 
+// Real tapes are all one size: fit each title to a single line, then give every label the tallest label's height.
+function fitTapes() {
+  const stack = $(".stack"); if (!stack) return;
+  stack.style.removeProperty("--txth");
+  for (const b of stack.querySelectorAll(".lab b")) {
+    b.style.fontSize = "";
+    let size = parseFloat(getComputedStyle(b).fontSize);
+    while (b.scrollWidth > b.clientWidth + 1 && size > 12) { size -= .5; b.style.fontSize = size + "px"; }
+  }
+  const tallest = Math.max(...[...stack.querySelectorAll(".txt")].map(t => t.offsetHeight));
+  stack.style.setProperty("--txth", tallest + "px");
+}
+let _fitRaf = 0;
+addEventListener("resize", () => { cancelAnimationFrame(_fitRaf); _fitRaf = requestAnimationFrame(fitTapes); });
+
 function renderJoin(brand) {
   const chips = S.teams.map(t => `<button class="chip" data-join="${esc(t.id)}">${esc(t.name)}</button>`).join("");
   const tapes = tapesHtml();
@@ -547,6 +578,7 @@ function renderJoin(brand) {
   };
   $("#teamName").onkeydown = e => { if (e.key === "Enter") $("#joinBtn").click(); };
   document.querySelectorAll("[data-join]").forEach(b => b.onclick = () => setTeam(b.dataset.join));
+  fitTapes(); document.fonts.ready.then(fitTapes);
 }
 function setTeam(id) { store.set(teamKey(), JSON.stringify({ id, name: teamName(id) })); renderGuest(); }
 
