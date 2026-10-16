@@ -171,6 +171,9 @@ a{color:var(--gold)}
 .tape:nth-of-type(5n+4)::after{border-color:rgba(255,255,255,.4)}
 #catsScreen .score-row,#teamsScreen .score-row{font-size:15px;padding:12px 14px}
 #catsScreen .score-row b{font-size:17px}
+.mini .item{padding:6px;margin-bottom:6px;background:rgba(255,255,255,.04)}
+.mini .thumb{width:72px;border-radius:7px}
+.mini .t{font-size:14px;font-weight:500}
 .foot{margin-top:28px;text-align:center;font-size:14px;color:var(--muted)}
 </style>
 </head>
@@ -308,12 +311,14 @@ function renderGuest() {
   const g = S.game || {};
   const votingCat = Object.keys(S.rounds).find(c => S.rounds[c] === "voting");
   const tabs = `<nav class="tabs">
-    <button data-tab="add" class="${G.tab === "add" ? "on" : ""}">➕ Add songs</button>
+    <button data-tab="add" class="${G.tab === "add" ? "on" : ""}">➕ Add</button>
+    <button data-tab="picks" class="${G.tab === "picks" ? "on" : ""}">🎬 Picks</button>
     <button data-tab="vote" class="${G.tab === "vote" ? "on" : ""}">🗳️ Vote${votingCat ? '<span class="dot"></span>' : ""}</button>
     <button data-tab="scores" class="${G.tab === "scores" ? "on" : ""}">🏆 Scores</button></nav>`;
 
   let body = "";
   if (G.tab === "add") body = guestAdd();
+  else if (G.tab === "picks") body = guestPicks(team);
   else if (G.tab === "vote") body = guestVote(votingCat, g);
   else body = `<h2 style="font-size:24px;margin-bottom:14px">Scoreboard</h2>${scoreRows(scoreboard())}<p class="muted small" style="margin-top:14px">1st place in a round = 3 points, 2nd = 1 point.</p>`;
 
@@ -385,26 +390,52 @@ function renderJoin(brand) {
 }
 function setTeam(id) { store.set(teamKey(), JSON.stringify({ id, name: teamName(id) })); renderGuest(); }
 
+// Every video this team has added, from any phone or laptop.
+const teamSubs = () => { const t = guestTeam(); return t ? S.subs.filter(s => s.team_id === t.id) : []; };
+const pickRow = (s, removable) => `<div class="item"><img class="thumb" src="${thumb(s.video_id)}" alt=""><div class="grow"><div class="t">${esc(s.title)}</div></div>${removable ? `<button class="btn-ghost btn-sm" data-del="${s.id}">Remove</button>` : ""}</div>`;
+function catPicksHtml(cat) {
+  const list = teamSubs().filter(s => s.category === cat);
+  if (!list.length) return "";
+  return `<div class="small muted" style="margin:14px 0 8px">Your team already added ${list.length === 1 ? "one video" : list.length + " videos"} here:</div>
+    <div class="mini">${list.map(s => pickRow(s, false)).join("")}</div>`;
+}
+
 function guestAdd() {
   const opts = cats().map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${subsIn(c.name).length})</option>`).join("");
-  const mine = S.subs.filter(s => S.mySubs.has(s.id));
-  const mineHtml = mine.length ? cats().filter(c => mine.some(s => s.category === c.name)).map(c => `
-    <div class="cat-head"><h3>${esc(c.name)}</h3></div>
-    ${mine.filter(s => s.category === c.name).map(s => `<div class="item"><img class="thumb" src="${thumb(s.video_id)}" alt=""><div class="grow"><div class="t">${esc(s.title)}</div></div><button class="btn-ghost btn-sm" data-del="${s.id}">Remove</button></div>`).join("")}`).join("")
-    : `<p class="muted small">Nothing yet. Your picks land here, like a Top 8 only you can see.</p>`;
+  const n = teamSubs().length;
   return `<div class="card">
       <h2 style="font-size:22px">Add a music video</h2>
       <label for="cat">Category</label>
       <select id="cat">${opts}</select>
       <div id="catDesc" class="muted small" style="margin-top:6px"></div>
+      <div id="catPicks"></div>
       <label for="url">YouTube link</label>
       <input id="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off">
       <div class="small" style="margin-top:6px"><a href="https://www.youtube.com/" target="_blank" rel="noopener">Open YouTube to find one ↗</a> <span class="muted">then tap Share → Copy link</span></div>
       <div id="previewBox"></div>
       <button class="btn-gold" id="addBtn" style="width:100%;margin-top:14px" disabled>Add to the showdown</button>
     </div>
-    <div style="margin-top:22px"><h2 style="font-size:20px">Your picks (${mine.length})</h2>${mineHtml}</div>
-    <p class="small muted" style="margin-top:36px;text-align:center">${canSwitchTeam(mine)
+    ${n ? `<button class="btn-ghost" data-goto="picks" style="width:100%;margin-top:14px">See all ${n} of your team's picks</button>` : ""}`;
+}
+
+function guestPicks(team) {
+  const all = teamSubs();
+  const covered = cats().filter(c => all.some(s => s.category === c.name)).length;
+  const mineHere = S.subs.filter(s => S.mySubs.has(s.id));
+  const sections = cats().map(c => {
+    const list = all.filter(s => s.category === c.name);
+    return `<div class="cat-head"><h3>${esc(c.name)}</h3><span class="muted small">${list.length || ""}</span></div>
+      ${list.length ? list.map(s => pickRow(s, true)).join("")
+        : `<div class="row small" style="padding:4px 2px 8px"><span class="muted grow">Nothing yet.</span><button class="btn-ghost btn-sm" data-addto="${esc(c.name)}">Add one</button></div>`}`;
+  }).join("");
+  return `<div class="card">
+      <h2 style="font-size:22px">Your team's picks</h2>
+      <p class="muted small" style="margin:4px 0 0">${all.length
+        ? `${all.length} video${all.length === 1 ? "" : "s"} across ${covered} of ${cats().length} categories, from every phone on your team.`
+        : "Nothing yet. Your team's picks land here, like a Top 8 only you can see."}</p>
+    </div>
+    ${sections}
+    <p class="small muted" style="margin-top:36px;text-align:center">${canSwitchTeam(mineHere)
       ? `<button id="switchTeam" class="btn-sm" style="background:none;padding:4px;color:var(--muted);text-decoration:underline;font-weight:500">Joined the wrong team?</button>`
       : "Joined the wrong team? Ask DJ scottbot to fix it."}</p>`;
 }
@@ -435,13 +466,23 @@ function bindGuest() {
     try { await rpc("cast_vote", { p_token: token(), p_submission: id }); toast("Final answer. Locked in."); } catch (e) { toast(errMsg(e)); refresh(); }
   });
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    if (!confirm("Remove this video?")) return;
-    try { await rpc("delete_my_submission", { p_token: token(), p_id: b.dataset.del }); S.mySubs.delete(b.dataset.del); await refresh(); toast("Removed"); } catch (e) { toast(errMsg(e)); }
+    const sub = S.subs.find(x => x.id === b.dataset.del);
+    if (!confirm(`Remove “${sub ? sub.title : "this video"}”?`)) return;
+    try {
+      await rpc("delete_team_submission", { p_team: guestTeam().id, p_id: b.dataset.del });
+      S.mySubs.delete(b.dataset.del); S.subs = S.subs.filter(x => x.id !== b.dataset.del);
+      renderGuest(); refresh(); toast("Removed");
+    } catch (e) { toast(errMsg(e)); }
+  });
+  document.querySelectorAll("[data-goto]").forEach(b => b.onclick = () => { G.tab = b.dataset.goto; renderGuest(); window.scrollTo(0, 0); });
+  document.querySelectorAll("[data-addto]").forEach(b => b.onclick = () => {
+    store.set("mvs_last_cat", b.dataset.addto); G.tab = "add"; renderGuest(); window.scrollTo(0, 0);
+    if ($("#cat")) { $("#cat").value = b.dataset.addto; $("#cat").onchange(); }
   });
   const cat = $("#cat");
   if (cat) {
     const lastCat = store.get("mvs_last_cat"); if (lastCat && !cat.dataset.touched && cats().some(c => c.name === lastCat) && !$("#url").value) cat.value = lastCat;
-    const showDesc = () => { $("#catDesc").textContent = catDesc(cat.value); };
+    const showDesc = () => { $("#catDesc").textContent = catDesc(cat.value); $("#catPicks").innerHTML = catPicksHtml(cat.value); };
     showDesc(); cat.onchange = () => { store.set("mvs_last_cat", cat.value); showDesc(); };
     const url = $("#url");
     url.oninput = () => onUrl(url.value);
