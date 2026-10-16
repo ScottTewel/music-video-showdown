@@ -22,7 +22,7 @@
 <meta name="twitter:image" content="https://scotttewel.github.io/music-video-showdown/og.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Bungee&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Bungee&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
 :root{
   /* late-night music video channel: CRT indigo, hot pink set, highlighter yellow, electric cyan */
@@ -31,6 +31,7 @@
   --pink:#ff3d9a; --cyan:#3ee8ff; --lime:#9dff6b;
   --blue:#3ee8ff; --red:#ff5d7a; --green:#9dff6b;
   --display:"Bungee", "Archivo", system-ui, sans-serif;
+  --hand:"Permanent Marker", "Comic Sans MS", cursive;
   --radius:16px;
 }
 *{box-sizing:border-box}
@@ -40,7 +41,8 @@ body{min-height:100vh;background:
   radial-gradient(800px 520px at 15% -10%, rgba(91,60,255,.45), transparent 65%),
   radial-gradient(700px 500px at 110% 110%, rgba(255,61,154,.16), transparent 60%), var(--bg);
   background-attachment:fixed}
-h1,h2,h3{font-family:Archivo,system-ui,sans-serif;font-weight:800;letter-spacing:-.015em;margin:0}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;font-weight:800;letter-spacing:-.015em;margin:0;text-wrap:balance}
+p{text-wrap:pretty}
 .display{font-family:var(--display);font-weight:400;letter-spacing:0}
 :focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 button,input,select{font:inherit;color:inherit}
@@ -146,8 +148,22 @@ a{color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.tv-on{animation:none}}
 .wordmark{position:absolute;left:8cqw;top:8cqw;margin:0;font-family:var(--display);font-weight:400;font-size:12.6cqw;line-height:.92;color:#fff;letter-spacing:0;
   text-shadow:-.045em 0 0 var(--pink),.045em 0 0 var(--cyan)}
-.credit{position:absolute;left:8cqw;bottom:7cqw;margin:0;font-size:max(12px,4.3cqw);line-height:1.3;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.7);z-index:1}
-.credit b{font-weight:800}
+.credit{position:absolute;left:8cqw;bottom:7cqw;margin:0;font-size:max(13px,4cqw);line-height:1.25;color:#fff;text-shadow:0 .06em .5em rgba(6,3,28,.7);z-index:1;font-kerning:normal;text-rendering:optimizeLegibility}
+.credit > span{display:block}
+.credit .artist{font-family:var(--display);font-weight:400;font-size:1.18em;letter-spacing:.02em;line-height:1.15;margin-bottom:.16em;
+  text-shadow:-.055em 0 0 var(--pink),.055em 0 0 var(--cyan)}
+.credit .song{position:relative;font-size:1.04em;font-weight:600}
+/* hang the open quote so the title lines up with the other lines */
+.credit .hq{position:absolute;left:0;top:0;transform:translateX(-100%)}
+.credit .hq,.credit .cq{color:var(--gold)}
+.credit .album{margin-top:.6em}
+.credit .album,.credit .dir{font-size:max(12px,.8em);font-weight:500;color:#d6cff5;letter-spacing:.012em;line-height:1.35}
+.credit .lbl{color:var(--muted)}
+@container (max-width:320px){
+  .credit{bottom:5cqw}
+  .credit .album{margin-top:.35em}
+  .credit .album,.credit .dir{line-height:1.25}
+}
 .lede{font-size:18px;line-height:1.5;margin:30px 0 0;max-width:34em}
 .join{margin-top:22px;border-color:var(--gold)}
 .join h2{font-size:22px}
@@ -157,18 +173,116 @@ a{color:var(--gold)}
 .how li{counter-increment:step;display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:start}
 .how li::before{content:counter(step);font-family:var(--display);font-size:22px;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);color:var(--gold);border:2px solid var(--line)}
 .how b{display:block;font-size:17px}
-.how p{margin:2px 0 0;color:var(--muted)}
+.how p{margin:2px 0 0;color:var(--muted);text-wrap:balance}
 .shelf{margin-top:34px}
-.tape{position:relative;display:block;border-radius:6px;padding:11px 64px 11px 16px;margin-bottom:10px;color:var(--gold-ink);box-shadow:5px 5px 0 #0b0726}
-.tape b{display:block;font-size:17px;line-height:1.2}
-.tape span{display:block;font-size:14px;opacity:.82;line-height:1.35}
-.tape::after{content:"";position:absolute;right:16px;top:50%;width:28px;height:28px;margin-top:-14px;border-radius:50%;border:5px solid rgba(23,17,58,.32)}
-.tape:nth-of-type(5n+1){background:var(--gold)}
-.tape:nth-of-type(5n+2){background:var(--cyan)}
-.tape:nth-of-type(5n+3){background:#fbf6ff}
-.tape:nth-of-type(5n+4){background:var(--pink);color:#fff}
-.tape:nth-of-type(5n+5){background:var(--lime)}
-.tape:nth-of-type(5n+4)::after{border-color:rgba(255,255,255,.4)}
+/* Tapes are real 3D boxes (front spine + lid + end) in one preserve-3d stack, tilted like a product photo. */
+.stack{--D:150px;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .2 -.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --fiber:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .25 0 0 0 0 .17 0 0 0 0 .06 0 0 0 .32 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  position:relative;margin:30px 22px 26px;transform:rotateX(-10deg) rotateY(-1deg);transform-style:preserve-3d}
+.stack::after{content:"";position:absolute;left:-4%;right:-10%;bottom:0;height:calc(var(--D) + 70px);transform-origin:50% 100%;transform:translateZ(40px) rotateX(90deg);background:radial-gradient(closest-side,rgba(3,1,12,.8),rgba(3,1,12,.35) 60%,transparent);filter:blur(6px);pointer-events:none}
+.tape{--x:0px;--z:0px;--ink:var(--gold-ink);--ca:var(--pink);--cb:var(--cyan);--snap:cubic-bezier(.16,1,.3,1);--rib:repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 1px,transparent 1px 3px);
+  position:relative;width:calc(100% - 16px);margin-left:var(--x);transform-style:preserve-3d;transform-origin:50% 50% calc(var(--D) / -2);translate:0 0 var(--z);rotate:y var(--yaw,0deg);
+  transition:translate .32s var(--snap),rotate .32s var(--snap)}
+.front{position:relative;isolation:isolate;padding:6px 24px;border-radius:2px;
+  background:var(--grain),
+    linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04) 13%,rgba(0,0,0,.25) 13.5%,transparent 16%,transparent 85%,rgba(255,255,255,.06) 85.5%,rgba(0,0,0,.4)),
+    var(--rib) 6px 50%/13px calc(100% - 18px) no-repeat,var(--rib) right 6px top 50%/13px calc(100% - 18px) no-repeat,var(--shell,#0c0a19);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.85),inset 1px 0 0 rgba(255,255,255,.07)}
+.f-top,.f-side,.f-left{position:absolute;pointer-events:none;backface-visibility:hidden}
+.f-top{left:0;right:0;bottom:100%;height:var(--D);transform-origin:50% 100%;transform:rotateX(90deg);border-radius:2px;
+  background:var(--grain),
+    linear-gradient(0deg,rgba(62,232,255,.42),rgba(62,232,255,.1) 20%,transparent 55%),
+    linear-gradient(90deg,transparent 23%,rgba(74,42,20,.8) 23% 77%,transparent 77%) 0 36%/100% 26% no-repeat,
+    linear-gradient(90deg,transparent 21%,rgba(255,255,255,.1) 21% 79%,transparent 79%) 0 33%/100% 34% no-repeat,
+    repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 1px,transparent 1px 4px) 0 100%/100% 16% no-repeat,
+    var(--shell,#0c0a19);
+  box-shadow:inset 0 -1px 0 rgba(62,232,255,.55)}
+.f-side{top:0;bottom:0;left:100%;width:var(--D);transform-origin:0 50%;transform:rotateY(90deg);
+  background:var(--grain),
+    linear-gradient(90deg,rgba(255,61,154,.34),rgba(255,61,154,.08) 25%,transparent 55%,rgba(0,0,0,.35)),
+    linear-gradient(180deg,transparent 47%,rgba(0,0,0,.65) 47% 53%,transparent 53%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 4px) 6px 0/22px 100% no-repeat,
+    #08061a;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 1px 0 0 rgba(255,61,154,.5)}
+.f-left{top:0;bottom:0;right:100%;width:var(--D);transform-origin:100% 50%;transform:rotateY(-90deg);
+  background:var(--grain),
+    linear-gradient(270deg,rgba(62,232,255,.3),rgba(62,232,255,.07) 25%,transparent 55%,rgba(0,0,0,.35)),
+    linear-gradient(180deg,transparent 47%,rgba(0,0,0,.65) 47% 53%,transparent 53%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,transparent 1px 4px) right 6px top 0/22px 100% no-repeat,
+    #08061a;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(62,232,255,.5)}
+@media (max-width:420px){.stack{--D:110px;margin-inline:16px}}
+.txt{flex:1;min-width:0;padding:6px 12px 8px}
+.lab b{display:block;font:400 calc(20px * var(--hs,1))/24px var(--hand);letter-spacing:.01em;rotate:var(--tilt,0deg);transform-origin:left center}
+.lab .d{display:block;font-size:13px;opacity:.82;line-height:18px}
+.p-ruled .txt{background:repeating-linear-gradient(180deg,transparent 0 17px,var(--rule) 17px 18px) 0 4px}
+.p-grid .txt{background:linear-gradient(90deg,var(--rule) 1px,transparent 1px) 0 0/7px 7px,linear-gradient(var(--rule) 1px,transparent 1px) 0 0/7px 7px}
+.lab{position:relative;display:flex;align-items:stretch;border-radius:2px;color:var(--ink);--rule:color-mix(in srgb,var(--ink) 14%,transparent);
+  background:var(--fiber),linear-gradient(180deg,rgba(255,255,255,.24),transparent 20%,transparent 80%,rgba(0,0,0,.08)),var(--tape);
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.6),0 1.5px 0 1.5px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 1px rgba(0,0,0,.16)}
+.tmark{--tx:repeating-linear-gradient(90deg,transparent 0 5px,rgba(255,255,255,.32) 5px 6px,transparent 6px 11px,rgba(0,0,0,.34) 11px 17px);--ty:repeating-linear-gradient(0deg,transparent 0 5px,rgba(255,255,255,.32) 5px 6px,transparent 6px 11px,rgba(0,0,0,.34) 11px 17px);
+  flex:none;display:grid;place-content:center;justify-items:center;gap:3px;text-align:center;border-radius:2px 0 0 2px}
+.tmark small{font:800 7px/1 Archivo,sans-serif;font-style:normal;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.b-vhs .tmark{width:46px;border-right:1px solid var(--rule);border-radius:0}
+.b-vhs .tmark svg{display:block;width:30px;height:15px}
+.b-scotch .tmark,.b-scotch-eg .tmark{width:50px;color:#fff;font:italic 700 12px/1 Georgia,"Times New Roman",serif;text-shadow:0 1px 0 rgba(0,0,0,.55)}
+.b-scotch .tmark{background:var(--tx),var(--ty),#c8102e}
+.b-scotch-eg .tmark{padding-bottom:7px;background:var(--tx) bottom/100% 8px no-repeat,var(--ty) bottom/100% 8px no-repeat,#d1172e}
+.b-scotch-eg small{color:var(--gold);text-shadow:none}
+.b-maxell .tmark,.b-maxell-gx .tmark{width:50px;font:800 12px/1 Archivo,sans-serif;letter-spacing:-.02em}
+.b-maxell .tmark{background:#101014;color:#fff}
+.b-maxell small{color:var(--gold)}
+.b-maxell-gx .tmark{background:linear-gradient(180deg,#f6f6f8,#b4b6bf 46%,#e9eaee 54%,#9a9ca6);color:#14141e}
+.b-maxell-gx small{color:#3d4050}
+.b-cassette .tmark{width:17px;background:#d1172e;color:#fff}
+.b-cassette .vc{writing-mode:vertical-rl;rotate:180deg;font:800 7px/1 Archivo,sans-serif;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}
+.ink-blue .lab b{color:#1b2a9a}
+.torn .lab{clip-path:polygon(0 0,calc(100% - 5px) 0,100% 14%,calc(100% - 6px) 31%,calc(100% - 1px) 47%,calc(100% - 8px) 63%,calc(100% - 3px) 80%,calc(100% - 6px) 100%,0 100%)}
+.aged .lab::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:multiply;
+  background:radial-gradient(ellipse 30% 95% at 100% 30%,rgba(140,90,20,.3),transparent 70%),
+             radial-gradient(ellipse 45% 75% at 0 100%,rgba(140,90,20,.22),transparent 70%),
+             linear-gradient(rgba(170,120,40,.1),rgba(170,120,40,.1))}
+.stk{position:absolute;top:50%;z-index:1;width:15px;padding:5px 0;translate:0 -50%;rotate:180deg;writing-mode:vertical-rl;white-space:nowrap;font-size:10px;font-weight:600;line-height:15px;text-align:center;letter-spacing:.02em;color:#17113a;background:#f3eee2;border-radius:1px;box-shadow:0 1px 0 rgba(0,0,0,.45)}
+.stk.l{left:5px}
+.stk.r{right:5px}
+.num{position:absolute;top:7px;z-index:1;width:13px;height:13px;font:800 10px/13px Archivo,sans-serif;text-align:center;color:#17113a;background:#fff;border-radius:2px;box-shadow:0 1px 0 rgba(0,0,0,.45)}
+.num.l{left:6px}
+.num.r{right:6px}
+.mtape{position:absolute;z-index:2;width:46px;height:14px;background:rgba(238,226,190,.9);pointer-events:none;clip-path:polygon(2% 12%,0 0,97% 6%,100% 0,98% 45%,100% 100%,96% 90%,4% 100%,0 86%,3% 50%)}
+.mtape.a{top:1px;right:30px;rotate:5deg}
+.mtape.b{bottom:1px;left:34px;rotate:-4deg}
+@media (max-width:420px){
+  .b-vhs .tmark{width:40px}
+  .b-vhs .tmark svg{width:26px;height:13px}
+  .b-scotch .tmark,.b-scotch-eg .tmark,.b-maxell .tmark,.b-maxell-gx .tmark{width:44px;font-size:11px}
+}
+.lab::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .18s;
+  background:linear-gradient(180deg,transparent 0 40%,rgba(255,255,255,.6) 47%,rgba(255,255,255,.18) 53%,rgba(11,7,38,.2) 55%,transparent 58%) 0 0/100% 320% no-repeat,
+             repeating-linear-gradient(180deg,rgba(11,7,38,.11) 0 1px,transparent 1px 3px)}
+.tape:nth-of-type(5n+1){--tape:var(--gold)}
+.tape:nth-of-type(5n+2){--tape:var(--cyan);--cb:var(--lime)}
+.tape:nth-of-type(5n+3){--tape:#fbf6ff}
+.tape:nth-of-type(5n+4){--tape:var(--pink);--ink:#fff;--ca:var(--gold)}
+.tape:nth-of-type(5n+5){--tape:var(--lime)}
+.tape:nth-of-type(7n+1){--x:5px}
+.tape:nth-of-type(7n+3){--x:10px}
+.tape:nth-of-type(7n+4){--x:3px}
+.tape:nth-of-type(7n+5){--x:8px}
+.tape:nth-of-type(7n+6){--x:1px}
+.tape:nth-of-type(7n+7){--x:7px}
+@media (hover:hover){
+  .tape:hover{translate:0 0 calc(var(--z) + 46px);rotate:y 0deg}
+  .tape:hover .lab::before{opacity:1;animation:tracking .6s linear}
+  .tape:hover b{text-shadow:-1.5px 0 0 var(--ca),1.5px 0 0 var(--cb);animation:jitter .3s steps(1,end)}
+}
+@keyframes tracking{from{background-position:0 100%,0 0}to{background-position:0 0,0 0}}
+@keyframes jitter{0%{transform:translateX(-3px) skewX(-8deg)}30%{transform:translateX(2px)}60%{transform:translateX(-1px) skewX(4deg)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .tape{transition:none}
+  .tape:hover{translate:0 0 var(--z);rotate:y var(--yaw,0deg)}
+  .tape:hover .lab::before,.tape:hover b{animation:none}
+}
 #catsScreen .score-row,#teamsScreen .score-row{font-size:15px;padding:12px 14px}
 #catsScreen .score-row b{font-size:17px}
 .mini .item{padding:6px;margin-bottom:6px;background:rgba(255,255,255,.04)}
@@ -340,16 +454,62 @@ const MOVIE_FAMILIES = ["The Fockers", "The Stiflers", "The Zoolanders", "The Gi
 let _placeholder;
 function teamPlaceholder() { return _placeholder ||= MOVIE_FAMILIES[Math.floor(Math.random() * MOVIE_FAMILIES.length)]; }
 
+// Each tape gets a stable, name-seeded "character": brand print, paper, stickers, wear, ink, tilt.
+const VHS_MARK = `<svg viewBox="0 0 458.62 229.45" fill="currentColor" aria-hidden="true" focusable="false"><path d="m4.0733 225.38h450.47v-221.3h-450.47z" fill="none" stroke="currentColor" stroke-width="14"/><path d="m122.82 47.875c1.9272-9.427-0.364-21.25-0.937-24.427l26.042 0.107-36.875 157.24c-2.7604 7.2917 0.156 15.26 2.8125 25.677h-43.698l-46.875-183.07 43.437 0.05 32.604 126.67 23.489-102.24"/><path d="m284.54 206.47v-182.86l-39.792-0.156v113.91c-0.107 2.448-0.05 2.3959-2.6562 2.3959l-36.927 0.05c-2.5-0.05-2.6563-0.156-2.7084-2.448v-113.91h-42.292v122.34l-8.1251 10.99h8.1251v49.688h42.292v-47.5c0.107-1.9792 0.469-2.1876 2.7084-2.1355 0 0 8.75-0.05 14.375-0.05 2.9688 0.05 7.1355-0.833 9.5834-1.7708 3.6978-1.4063 9.8958-4.1667 13.021-5.625 1.1453-0.521 2.6042-0.469 2.6042 1.3014v55.781h39.792"/><path d="m303.97 190.17c19.167 0 48.177-0.156 60.886-0.156 12.187 0 28.021-5.3126 28.021-25.469 0-11.562-9.1667-20.833-24.167-25.365l-31.979-9.7396c-22.083-6.6666-38.385-22.292-38.385-49.167 0-39.063 38.646-56.51 69.948-56.458 16.719 0.05 42.708-0.05 64.583 0l-6.823 15.938h-46.354c-21.458 0-40.469 8.4896-40.156 30.417 0.208 14.063 6.4584 21.771 26.406 26.979l25.156 7.0312c24.167 6.4584 39.687 24.427 39.687 48.542 0 38.854-36.458 53.542-62.031 53.542h-58.75l-6.0417-16.094"/></svg>`;
+const TAPE_CODES = ["T-120", "T-160", "E-180", "E-195", "E-240", "T-90"];
+const TAPE_BRANDS = ["scotch", "vhs", "maxell", "cassette", "scotch-eg", "maxell-gx", "home"];
+const TAPE_MARKS = {
+  scotch: "Scotch",
+  "scotch-eg": "Scotch<small>EG</small>",
+  maxell: "maxell<small>HGX</small>",
+  "maxell-gx": "maxell<small>GX Silver</small>",
+  cassette: `<span class="vc">Cassette</span>`,
+  vhs: VHS_MARK,
+};
+const TAPE_SHELLS = ["#0c0a19", "#0c0a19", "#1b1922", "#0a1020"];
+const TAPE_WEAR = ["torn", "aged", "mt-a", "mt-b", "", ""];
+const hashStr = s => { let h = 2166136261; for (const ch of String(s)) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return h >>> 0; };
+const seeded = seed => () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const pick = (r, a) => a[Math.floor(r() * a.length)];
+const shuffled = (r, a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function tapesHtml() {
+  const list = cats();
+  // One stream seeded by the lineup: stable across re-renders, and decks guarantee every brand and wear shows up.
+  const r = seeded(hashStr(list.map(c => c.name).join("|")));
+  const brands = shuffled(r, TAPE_BRANDS), wear = shuffled(r, TAPE_WEAR);
+  let lean = r() < .5 ? -1 : 1, run = 0;
+  return list.map((c, i) => {
+    const brand = brands[i % brands.length], w = wear[i % wear.length];
+    if (run >= 2 || r() < .6) { lean = -lean; run = 1; } else run++; // never 3 tapes leaning the same way
+    const yaw = lean * (2 + r() * 4);
+    const cls = ["tape", `b-${brand}`, `p-${pick(r, ["plain", "grid", "ruled"])}`];
+    if (w === "torn" || w === "aged") cls.push(w);
+    if (i % 5 !== 3 && r() < .4) cls.push("ink-blue"); // pink labels keep white ink
+    const side = pick(r, ["l", "r", ""]);
+    const code = side ? `<span class="stk ${side}" aria-hidden="true">${pick(r, TAPE_CODES)}</span>` : "";
+    const num = r() < .35 ? `<span class="num ${side === "l" ? "r" : "l"}" aria-hidden="true">${1 + Math.floor(r() * 6)}</span>` : "";
+    const mt = w.startsWith("mt-") ? `<span class="mtape ${w.slice(3)}" aria-hidden="true"></span>` : "";
+    const style = `--tilt:${(r() * 2.4 - 1.4).toFixed(2)}deg;--hs:${(.94 + r() * .12).toFixed(3)};--shell:${pick(r, TAPE_SHELLS)};--z:${(r() * 16 - 8).toFixed(1)}px;--yaw:${yaw.toFixed(2)}deg`;
+    const mark = TAPE_MARKS[brand] ? `<span class="tmark" aria-hidden="true">${TAPE_MARKS[brand]}</span>` : "";
+    return `<div class="${cls.join(" ")}" style="${style}"><div class="front">${code}${num}${mt}<div class="lab">${mark}<div class="txt"><b>${esc(c.name)}</b><span class="d">${esc(c.desc)}</span></div></div></div><span class="f-top" aria-hidden="true"></span><span class="f-side" aria-hidden="true"></span><span class="f-left" aria-hidden="true"></span></div>`;
+  }).join("");
+}
+
 function renderJoin(brand) {
   const chips = S.teams.map(t => `<button class="chip" data-join="${esc(t.id)}">${esc(t.name)}</button>`).join("");
-  const tapes = cats().map(c => `<div class="tape"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span></div>`).join("");
+  const tapes = tapesHtml();
   $("#app").innerHTML = `<div class="wrap">
     <header class="hero">
       <div class="tv" role="img" aria-label="A retro TV showing the words Music Video Showdown">
         <span class="ant l"></span><span class="ant r"></span>
         <div class="tv-screen"><div class="tv-on ${G.tvPlayed ? "still" : ""}">
           <h1 class="wordmark">Music<br>Video<br>Showdown</h1>
-          <p class="credit"><b>Your Friends</b><br>“Pick the Video, Win the Night”<br>${esc(GAME.name)}<br>Director: DJ scottbot</p>
+          <p class="credit">
+            <span class="artist">Your Friends</span>
+            <span class="song"><span class="hq">“</span>Pick the Video, Win the Night<span class="cq">”</span></span>
+            <span class="album">${esc(GAME.name)}</span>
+            <span class="dir"><span class="lbl">Director:</span> DJ scottbot</span>
+          </p>
         </div></div>
         <span class="knob a"></span><span class="knob b"></span><span class="grille"></span>
       </div>
@@ -376,7 +536,7 @@ function renderJoin(brand) {
 
     <section class="shelf">
       <h2>Tonight's categories</h2>
-      ${tapes}
+      <div class="stack">${tapes}</div>
     </section>
     <p class="foot">Best viewed in Netscape Navigator at 800×600.</p>
   </div>`;
