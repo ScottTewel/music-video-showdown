@@ -489,7 +489,10 @@ function liveVoteCat() {
   return Object.keys(S.rounds).find(c => S.rounds[c] === "voting") || "";
 }
 const teamName = id => (S.teams.find(t => t.id === id) || {}).name || "Unknown";
-const subsIn = cat => S.subs.filter(s => s.category === cat);
+// Videos in a category play in a shuffled order that's the same on every refresh and every device
+// (seeded by game + video id), so one team's picks don't bunch up and the order doesn't jump around.
+const shuffleKey = id => { let h = 2166136261; for (const ch of String(GAME ? GAME.id : "") + id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+const subsIn = cat => S.subs.filter(s => s.category === cat).sort((a, b) => shuffleKey(a.id) - shuffleKey(b.id));
 const votesFor = id => { const r = S.tallies.find(x => x.submission_id === id); return r ? Number(r.votes) : 0; };
 
 function rankRound(cat) {
