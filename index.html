@@ -82,7 +82,6 @@ a{color:var(--gold)}
 .toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:100;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px)}
 .cat-head{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 8px}
 .cat-head h3{font-size:17px}
-.preview{display:flex;gap:12px;align-items:center;margin-top:12px}
 .empty{text-align:center;padding:40px 10px}
 .empty .big{font-size:48px}
 .score-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--panel2);margin-bottom:8px}
@@ -305,6 +304,66 @@ a{color:var(--gold)}
 .mini .thumb{width:72px;border-radius:7px}
 .mini .t{font-size:14px;font-weight:500}
 .foot{margin-top:28px;text-align:center;font-size:14px;color:var(--muted)}
+
+/* ---------- add form: YouTube search ---------- */
+.search{position:relative}
+.search input{-webkit-appearance:none;appearance:none}
+.search.on input{padding-right:98px}
+.search.on input:placeholder-shown{padding-right:58px}
+.search input::-webkit-search-cancel-button,.search input::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
+.search .go{position:absolute;top:5px;right:5px;bottom:5px;width:46px;padding:0;border-radius:9px;background:var(--line);color:var(--text);display:grid;place-items:center;transition:background-color .15s,color .15s}
+.search input:focus ~ .go{background:var(--gold);color:var(--gold-ink)}
+.search .clr{position:absolute;top:5px;bottom:5px;right:55px;width:38px;padding:0;background:transparent;color:var(--muted);font-size:24px;line-height:1;font-weight:400;display:grid;place-items:center}
+.search .clr:hover{color:var(--text)}
+.hint{display:flex;justify-content:space-between;gap:10px;margin-top:6px;font-size:13px;color:var(--muted)}
+.hint span:last-child{white-space:nowrap}
+@media (max-width:440px){.hint span:last-child{display:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#results:empty,#pick:empty{display:none}
+.res-head{margin:16px 2px 8px;font-size:13px;color:var(--muted)}
+.res{display:grid;grid-template-columns:minmax(112px,34%) 1fr;gap:12px;align-items:start;width:100%;padding:8px;margin-bottom:8px;text-align:left;font-weight:400;background:var(--panel2);border:2px solid transparent;border-radius:14px;transition:border-color .15s,background-color .15s}
+@media (hover:hover){.res:not(:disabled):hover{background:#342a74;border-color:var(--line)}}
+.res:not(:disabled):active{border-color:var(--gold)}
+.res:disabled{opacity:.62}
+.vt{position:relative;display:block;aspect-ratio:16/9;border-radius:9px;overflow:hidden;background:#000}
+.vt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.dur{position:absolute;right:5px;bottom:5px;z-index:1;padding:0 5px;border-radius:5px;background:rgba(0,0,0,.82);color:#fff;font-size:12px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums}
+.rb{display:flex;flex-direction:column;gap:3px;min-width:0}
+.rt{font-weight:600;font-size:15px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.rc{display:flex;align-items:center;gap:6px;font-size:13px;min-width:0;margin-top:2px}
+.rc .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{position:relative;overflow:hidden;width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff;background:hsl(var(--h) 55% 40%)}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rm{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.flag{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.5;border:1px solid transparent;white-space:nowrap}
+.flag.ok{background:rgba(62,232,255,.13);color:var(--cyan)}
+.flag.live{background:rgba(255,61,154,.17);color:#ff9ccc}
+.flag.meh{border-color:var(--line);color:var(--muted)}
+.flag.warn{background:rgba(255,210,63,.13);color:var(--gold)}
+.flag.dupe{background:rgba(255,93,122,.15);color:#ff8fa3}
+.note{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.res.skel{pointer-events:none;animation:breathe 1.3s ease-in-out infinite}
+.skel .vt{background:rgba(255,255,255,.07)}
+.bar{display:block;height:12px;border-radius:6px;background:rgba(255,255,255,.09);margin:2px 0 6px}
+@keyframes breathe{50%{opacity:.5}}
+.notice{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;margin-top:14px;padding:14px;border-radius:14px;background:rgba(0,0,0,.18);border:1px dashed var(--line)}
+.notice .ico{font-size:28px;line-height:1.1}
+.notice b{display:block;font-size:16px}
+.notice p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.terms{margin:4px 2px 0;font-size:12px;color:var(--muted)}
+.terms a{color:inherit}
+.pick{margin-top:14px;padding:10px;border-radius:16px;background:rgba(255,210,63,.07);border:2px solid var(--gold);scroll-margin-top:12px;outline:none}
+.pick .vt{border-radius:10px}
+.pick .vt.tune{animation:tune .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes tune{0%{transform:scaleY(.03);filter:brightness(2.6)}55%{transform:scaleY(1.02);filter:brightness(1.35)}100%{transform:none;filter:none}}
+.pick iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;padding:10px 16px;border-radius:999px;background:rgba(0,0,0,.8);color:#fff;font-size:15px;text-decoration:none;white-space:nowrap}
+.play:hover{background:#000}
+.pick-meta{display:flex;gap:10px;align-items:flex-start;margin-top:10px}
+.pick .rt{-webkit-line-clamp:3}
+.pick label{margin-top:12px}
+@media (prefers-reduced-motion:reduce){.pick .vt.tune,.res.skel{animation:none}}
 </style>
 </head>
 <body>
@@ -419,7 +478,9 @@ function scoreRows(rows) {
 // =====================================================================
 // GUEST
 // =====================================================================
-const G = { tab: "add", pendingId: null, pendingTitle: "", busy: false, lastPhaseKey: "" };
+const G = { tab: "add", busy: false, lastPhaseKey: "",
+  // add form: YouTube search. Lives here so it survives the 3s re-renders.
+  yt: { mode: "", checking: false, checked: false, q: "", lastQ: "", status: "idle", results: [], sel: null, title: "", run: 0, tune: false } };
 
 const teamKey = () => "mvs_team_" + (GAME ? GAME.id : "");
 // Once this phone has added a video in this game, switching teams goes through the DJ.
@@ -452,15 +513,14 @@ function renderGuest() {
   else if (G.tab === "vote") body = guestVote(votingCat, g);
   else body = `<h2 style="font-size:24px;margin-bottom:14px">Scoreboard</h2>${scoreRows(scoreboard())}<p class="muted small" style="margin-top:14px">1st place in a round = 3 points, 2nd = 1 point.</p>`;
 
-  const keepInput = G.tab === "add" ? { url: $("#url")?.value, cat: $("#cat")?.value, title: $("#title")?.value } : null;
+  const keepInput = G.tab === "add" ? { find: $("#find")?.value, cat: $("#cat")?.value } : null;
   const focusId = document.activeElement?.id;
   app.innerHTML = `<div class="wrap">${brand}
     <div class="row small muted" style="margin:-8px 0 16px">Playing as&nbsp;<b style="color:var(--text)">${esc(team.name)}</b></div>
     ${body}</div>${tabs}`;
   if (keepInput) {
-    if (keepInput.url != null) $("#url").value = keepInput.url;
+    if (keepInput.find != null) $("#find").value = keepInput.find;
     if (keepInput.cat) $("#cat").value = keepInput.cat;
-    if (keepInput.title != null && $("#title")) $("#title").value = keepInput.title;
     if (focusId && $("#" + focusId)) $("#" + focusId).focus();
   }
   bindGuest();
@@ -559,7 +619,7 @@ function renderJoin(brand) {
     <section class="how">
       <h2>How it works</h2>
       <ol>
-        <li><div><b>Add your videos</b><p>Paste a YouTube link for each category. Nobody sees who picked what.</p></div></li>
+        <li><div><b>Add your videos</b><p>Find a YouTube video for each category. Nobody sees who picked what.</p></div></li>
         <li><div><b>Watch together</b><p>The DJ plays every video in a category on the TV.</p></div></li>
         <li><div><b>Vote for your favorite</b><p>Best video in the round earns its team 3 points. Runner-up gets 1.</p></div></li>
       </ol>
@@ -601,13 +661,272 @@ function guestAdd() {
       <select id="cat">${opts}</select>
       <div id="catDesc" class="muted small" style="margin-top:6px"></div>
       <div id="catPicks"></div>
-      <label for="url">YouTube link</label>
-      <input id="url" inputmode="url" placeholder="Paste a YouTube link" autocomplete="off">
-      <div class="small" style="margin-top:6px"><a href="https://www.youtube.com/" target="_blank" rel="noopener">Open YouTube to find one ↗</a> <span class="muted">then tap Share → Copy link</span></div>
-      <div id="previewBox"></div>
+      <label for="find" id="findLabel">Find the video</label>
+      <form class="search" id="findForm" role="search" action="#">
+        <input id="find" type="search" enterkeyhint="search" placeholder="Search YouTube or paste a link" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="findHint">
+        <button type="button" class="clr hidden" id="findClr" aria-label="Clear search">×</button>
+        <button type="submit" class="go" id="findGo" aria-label="Search">${YT_ICON}</button>
+      </form>
+      <div id="findHint"></div>
+      <div id="ytSr" class="sr" aria-live="polite"></div>
+      <div id="results"></div>
+      <div id="pick"></div>
       <button class="btn-gold" id="addBtn" style="width:100%;margin-top:14px" disabled>Add to the showdown</button>
     </div>
     ${n ? `<button class="btn-ghost" data-goto="picks" style="width:100%;margin-top:14px">See all ${n} of your team's picks</button>` : ""}`;
+}
+
+// ---------- add form: YouTube search ----------
+// Searches go through the yt-search Edge Function, which holds the API key.
+// If it's missing, unconfigured, out of quota, or slow, the field quietly turns back
+// into the old "Paste a YouTube link" box for half an hour, then checks again.
+const YT_OFF_MS = 30 * 60e3;
+const YT_ICON = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>`;
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const hue = s => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 360;
+const inCat = (cat, id) => S.subs.find(s => s.category === cat && s.video_id === id);
+const curCat = () => $("#cat")?.value || "";
+const say = msg => { if ($("#ytSr")) $("#ytSr").textContent = msg; };
+
+const TITLE_NOISE = /\s*[\(\[][^\)\]]*\b(official|video|audio|lyrics?|hd|4k|remaster(ed)?|visuali[sz]er|clean|explicit|upgrade|hq|1080p)\b[^\)\]]*[\)\]]/gi;
+function splitTitle(title) {
+  const t = String(title || "").replace(TITLE_NOISE, "").trim();
+  const m = t.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  return m ? [m[1].trim(), m[2].trim()] : [null, t];
+}
+const artistOf = ch => String(ch || "").replace(/\s+-\s+Topic$/i, "").replace(/VEVO$/i, "").trim();
+const squash = s => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
+// "Nirvana - Smells Like Teen Spirit (Official Music Video)" -> "Smells Like Teen Spirit – Nirvana"
+function cleanTitle(r) {
+  const [artist, song] = splitTitle(r.title);
+  const a = artist || artistOf(r.channel);
+  return a && song ? `${song} – ${a}` : song || a;
+}
+// YouTube has no "official" flag, so read the usual tells: a VEVO or artist-named channel,
+// or a licensed upload that says Official. Audio-only and lyric uploads never count.
+function classify(r) {
+  const t = String(r.title || "").toLowerCase();
+  const brackets = (t.match(/[\(\[][^\)\]]*[\)\]]/g) || []).join(" ");
+  const topic = /\s-\stopic$/i.test(r.channel || "");
+  const audio = topic || /\baudio\b/.test(brackets);
+  const lyric = /\blyrics?\b/.test(t);
+  const live = /\blive\b/.test(brackets) || /\blive (at|from|in|on)\b/.test(t) || /\|\s*live\b/.test(t);
+  const [artist] = splitTitle(r.title);
+  const vevo = /vevo$/i.test(r.channel || "");
+  const artistChannel = !!artist && squash(artistOf(r.channel)) === squash(artist);
+  const official = !audio && !lyric && (vevo || artistChannel || (!!r.licensed && /\bofficial\b/.test(t)));
+  return { official, audio, topic, lyric, live, age: !!r.age };
+}
+
+async function ytCall(body) {
+  let timer;
+  const late = new Promise((_, no) => { timer = setTimeout(() => no(new Error("timeout")), 9000); });
+  try {
+    const { data, error } = await Promise.race([sb.functions.invoke("yt-search", { body }), late]);
+    if (error) throw error;
+    return data;
+  } finally { clearTimeout(timer); }
+}
+// Ask once per page load. A failed check or search turns the field into paste mode.
+// Phones that have never reached search start in paste mode and upgrade, so nothing flickers away.
+function ytCheck() {
+  const y = G.yt;
+  if (y.checking) return;
+  const offFresh = Date.now() - Number(store.get("mvs_yt_off") || 0) < YT_OFF_MS;
+  if (!y.mode) y.mode = !offFresh && store.get("mvs_yt_ok") ? "search" : "paste";
+  if (offFresh || (y.mode === "search" && y.checked)) return;
+  y.checking = true;
+  ytCall({ ping: true }).then(d => !!(d && d.ok), () => false).then(ok => {
+    y.checking = false; y.checked = true;
+    if (!ok) return ytOff();
+    store.del("mvs_yt_off"); store.set("mvs_yt_ok", "1");
+    if (y.mode !== "search") { y.mode = "search"; paintYt(); }
+  });
+}
+function ytOff() {
+  store.set("mvs_yt_off", String(Date.now())); store.del("mvs_yt_ok");
+  const y = G.yt;
+  if (y.mode === "paste") return;
+  const f = $("#find"), typed = f ? f.value.trim() : "";
+  const words = typed && !parseYouTube(typed) ? typed : "";
+  if (y.status === "loading") y.run++;
+  // Carry what they were looking for into the "Open YouTube" link.
+  Object.assign(y, { mode: "paste", status: "idle", results: [], lastQ: y.q || words || y.lastQ, q: "" });
+  if (words) f.value = "";
+  paintYt();
+  say("Paste a YouTube link instead.");
+}
+
+function chanLine(r) {
+  if (!r.channel) return "";
+  const a = artistOf(r.channel) || r.channel;
+  const img = r.avatar ? `<img src="${esc(r.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+  return `<span class="rc"><span class="av" style="--h:${hue(r.channel)}" aria-hidden="true">${esc([...a][0].toUpperCase())}${img}</span><span class="n">${esc(r.channel)}</span></span>`;
+}
+function metaText(r) {
+  if (r.pasted) return "From your link";
+  const subs = r.subs != null ? `${compact.format(r.subs)} subs` : r.flags.topic ? "Auto-generated" : "";
+  return [subs, r.views != null ? `${compact.format(r.views)} views` : "", r.year].filter(Boolean).join(" · ");
+}
+function flagsHtml(r) {
+  const f = r.flags, out = [];
+  if (f.official) out.push(`<span class="flag ok">✓ Official${f.live ? "" : " video"}</span>`);
+  if (f.live) out.push(`<span class="flag live">● Live</span>`);
+  if (f.audio) out.push(`<span class="flag meh" title="Album art on a loop. The song plays, but there's nothing to watch.">♪ Audio only</span>`);
+  if (f.lyric) out.push(`<span class="flag meh">Lyric video</span>`);
+  if (f.age) out.push(`<span class="flag warn">18+ · DJ opens it on YouTube</span>`);
+  if (inCat(curCat(), r.id)) out.push(`<span class="flag dupe">Already in this category</span>`);
+  return out.length ? `<span class="flags">${out.join("")}</span>` : "";
+}
+function elsewhereNote(r) {
+  const s = teamSubs().find(x => x.video_id === r.id && x.category !== curCat());
+  return s ? `<span class="note">Your team has this in ${esc(s.category)}</span>` : "";
+}
+const durChip = r => r.dur ? `<span class="dur">${esc(r.dur)}</span>` : "";
+
+function renderResults() {
+  const box = $("#results"), y = G.yt, q = esc(y.q);
+  if (y.sel || y.mode === "paste") { box.innerHTML = ""; return; }
+  if (y.status === "loading") {
+    const bone = `<div class="res skel" aria-hidden="true"><span class="vt"></span><span class="rb"><span class="bar" style="width:94%"></span><span class="bar" style="width:58%"></span><span class="bar" style="width:38%;height:10px"></span></span></div>`;
+    box.innerHTML = `<div class="res-head">Scanning channels…</div>${bone.repeat(3)}`;
+  } else if (y.status === "results") {
+    const cat = curCat();
+    box.innerHTML = `<div class="res-head">Top results for “${q}” · tap one to use it</div>` + y.results.map((r, i) =>
+      `<button type="button" class="res" data-i="${i}"${inCat(cat, r.id) ? " disabled" : ""}>
+        <span class="vt"><img src="${thumb(r.id)}" alt="" loading="lazy">${durChip(r)}</span>
+        <span class="rb"><span class="rt">${esc(r.title)}</span>${chanLine(r)}<span class="rm">${metaText(r)}</span>${flagsHtml(r)}${elsewhereNote(r)}</span>
+      </button>`).join("") +
+      `<p class="terms">Search uses YouTube API Services · <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a></p>`;
+  } else if (y.status === "empty") {
+    box.innerHTML = `<div class="notice"><span class="ico" aria-hidden="true">📼</span><div><b>No videos for “${q}”</b><p>Check the spelling, try the artist's name, or paste a link.</p></div></div>`;
+  } else box.innerHTML = "";
+}
+function renderPick() {
+  const box = $("#pick"), y = G.yt, r = y.sel;
+  if (!r) { box.innerHTML = ""; return; }
+  const play = r.loading ? "" : r.flags.age
+    ? `<a class="play" href="https://www.youtube.com/watch?v=${r.id}" target="_blank" rel="noopener">Opens on YouTube ↗</a>`
+    : `<button type="button" class="play" id="ytPlay">▶ Preview</button>`;
+  box.innerHTML = `<div class="pick" id="pickCard" tabindex="-1" role="group" aria-label="Your pick">
+    <div class="vt${y.tune ? " tune" : ""}" id="pickVt"><img src="${thumb(r.id)}" alt="">${durChip(r)}${play}</div>
+    <div class="pick-meta">
+      <div class="rb grow">${r.loading ? `<span class="rm">Connecting at 56k…</span>`
+        : `<span class="rt">${esc(r.title || "Untitled video")}</span>${chanLine(r)}<span class="rm">${metaText(r)}</span>${flagsHtml(r)}${elsewhereNote(r)}`}</div>
+      <button type="button" class="btn-sm btn-ghost" id="ytChange">${r.pasted ? "Clear" : "Change"}</button>
+    </div>
+    ${r.loading ? "" : `<label for="title">Song & artist</label>
+    <input id="title" maxlength="200" value="${esc(y.title)}" placeholder="Song – Artist">
+    <div class="small muted" style="margin-top:6px">${r.title ? "Tidied from the YouTube title. Fix it if it's off." : "Type the song and the artist."}</div>`}
+  </div>`;
+  y.tune = false;
+}
+function syncField() {
+  const f = $("#find"), y = G.yt, search = y.mode !== "paste";
+  const v = f.value.trim(), link = !!parseYouTube(v);
+  $("#findForm").classList.toggle("on", search);
+  $("#findLabel").textContent = search ? "Find the video" : "YouTube link";
+  f.placeholder = search ? "Search YouTube or paste a link" : "Paste a YouTube link";
+  f.type = search ? "search" : "text";
+  f.inputMode = search ? "search" : "url";
+  f.enterKeyHint = search ? "search" : "done";
+  $("#findGo").classList.toggle("hidden", !search);
+  $("#findClr").classList.toggle("hidden", !search || !v);
+  if (search) {
+    $("#findHint").innerHTML = `<div class="hint"><span>${v && !link && v !== y.q ? "Hit search to look it up" : "A song, an artist, or a YouTube link"}</span><span>Results from YouTube</span></div>`;
+  } else {
+    const words = (v && !link ? v : "") || y.lastQ;
+    const yt = words ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(words) : "https://www.youtube.com/";
+    $("#findHint").innerHTML = `<div class="small" style="margin-top:6px"><a href="${esc(yt)}" target="_blank" rel="noopener">Open YouTube to find one ↗</a> <span class="muted">then tap Share → Copy link</span></div>`
+      + (v && !link ? `<p class="small" style="color:var(--red);margin-top:8px">That doesn't look like a YouTube link.</p>` : "");
+  }
+}
+function syncAdd() {
+  const r = G.yt.sel;
+  $("#addBtn").disabled = !r || !!r.loading || !!inCat(curCat(), r.id);
+}
+function paintYt() {
+  if (!$("#find")) return;
+  renderResults(); renderPick(); syncAdd(); syncField();
+}
+
+async function runSearch(raw) {
+  const y = G.yt, typed = raw.trim(), id = parseYouTube(typed);
+  if (id) return pasteLink(id, typed);
+  const q = typed.replace(/\s+/g, " ").slice(0, 100);
+  if (!q || y.mode === "paste") return;
+  const run = ++y.run;
+  Object.assign(y, { q, sel: null, status: "loading", results: [] });
+  $("#find").blur();   // drop the phone keyboard so the results show
+  paintYt(); say("Searching YouTube");
+  try {
+    const d = await ytCall({ q, token: token() });
+    if (run !== y.run) return;
+    const results = (Array.isArray(d && d.results) ? d.results : [])
+      .filter(r => r && /^[\w-]{11}$/.test(r.id)).map(r => ({ ...r, flags: classify(r) }));
+    Object.assign(y, { results, status: results.length ? "results" : "empty" });
+    paintYt(); say(results.length ? `${results.length} results` : "No results");
+  } catch (e) {
+    if (run !== y.run) return;
+    console.warn("yt-search", e);
+    ytOff();
+  }
+}
+function selectResult(r) {
+  Object.assign(G.yt, { sel: r, title: cleanTitle(r), tune: !reducedMotion() });
+  paintYt();
+  const card = $("#pickCard");
+  card.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+async function pasteLink(id, url) {
+  const y = G.yt;
+  if (y.sel && y.sel.pasted && y.sel.id === id) return;
+  const run = ++y.run;
+  Object.assign(y, { q: "", status: "idle", results: [], sel: { id, url, pasted: true, loading: true, flags: {} }, title: "", tune: !reducedMotion() });
+  paintYt();
+  let j = {};
+  try { j = await (await fetch(`https://noembed.com/embed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`)).json(); } catch {}
+  if (run !== y.run) return;
+  const r = { id, url, pasted: true, title: j.title || "", channel: j.author_name || "" };
+  r.flags = classify(r);
+  Object.assign(y, { sel: r, title: r.title ? cleanTitle(r) : "" });
+  paintYt();
+}
+function clearPick() {
+  const y = G.yt, was = y.sel;
+  y.sel = null; y.run++;
+  if (was && was.pasted) $("#find").value = "";
+  paintYt();
+  const i = was ? y.results.indexOf(was) : -1;
+  ((i >= 0 && $(`.res[data-i="${i}"]`)) || $("#find")).focus();
+}
+function bindYt() {
+  const f = $("#find"), y = G.yt;
+  ytCheck();
+  f.oninput = () => {
+    const v = f.value.trim(), id = parseYouTube(v);
+    if (id) return pasteLink(id, v);
+    if (y.sel && y.sel.pasted) { y.sel = null; y.run++; return paintYt(); }
+    if (!v && !y.sel && y.status !== "idle") { Object.assign(y, { q: "", status: "idle", results: [] }); y.run++; return paintYt(); }
+    syncField();
+  };
+  $("#findForm").onsubmit = e => { e.preventDefault(); runSearch(f.value); };
+  $("#findClr").onclick = () => { f.value = ""; Object.assign(y, { q: "", status: "idle", results: [], sel: null }); y.run++; paintYt(); f.focus(); };
+  $("#results").onclick = e => {
+    const b = e.target.closest(".res[data-i]");
+    if (b && !b.disabled) selectResult(y.results[+b.dataset.i]);
+  };
+  $("#pick").onclick = e => {
+    if (e.target.closest("#ytChange")) return clearPick();
+    if (e.target.closest("#ytPlay")) {
+      const r = y.sel;
+      $("#pickVt").innerHTML = `<iframe src="https://www.youtube.com/embed/${r.id}?autoplay=1&rel=0&playsinline=1" title="Preview: ${esc(r.title || "your pick")}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    }
+  };
+  $("#pick").oninput = e => { if (e.target.id === "title") y.title = e.target.value; };
+  paintYt();
 }
 
 function guestPicks(team) {
@@ -673,46 +992,28 @@ function bindGuest() {
   });
   const cat = $("#cat");
   if (cat) {
-    const lastCat = store.get("mvs_last_cat"); if (lastCat && !cat.dataset.touched && cats().some(c => c.name === lastCat) && !$("#url").value) cat.value = lastCat;
+    const lastCat = store.get("mvs_last_cat"); if (lastCat && !cat.dataset.touched && cats().some(c => c.name === lastCat) && !$("#find").value && !G.yt.sel) cat.value = lastCat;
     const showDesc = () => { $("#catDesc").textContent = catDesc(cat.value); $("#catPicks").innerHTML = catPicksHtml(cat.value); };
-    showDesc(); cat.onchange = () => { store.set("mvs_last_cat", cat.value); showDesc(); };
-    const url = $("#url");
-    url.oninput = () => onUrl(url.value);
-    if (url.value) onUrl(url.value, true);
+    showDesc(); cat.onchange = () => { store.set("mvs_last_cat", cat.value); showDesc(); paintYt(); };
+    bindYt();
     $("#addBtn").onclick = addSong;
   }
 }
 
-async function onUrl(val, silent) {
-  const id = parseYouTube(val);
-  const box = $("#previewBox"); const btn = $("#addBtn");
-  if (!id) { G.pendingId = null; box.innerHTML = val.trim() ? `<p class="small" style="color:var(--red);margin-top:8px">That doesn't look like a YouTube link.</p>` : ""; btn.disabled = true; return; }
-  if (id === G.pendingId && $("#title")) { btn.disabled = false; return; }
-  G.pendingId = id;
-  box.innerHTML = `<div class="preview"><img class="thumb" src="${thumb(id)}" alt=""><div class="grow muted small">Connecting at 56k…</div></div>`;
-  let title = "";
-  try {
-    const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`);
-    const j = await r.json(); title = j.title || "";
-  } catch {}
-  if (G.pendingId !== id) return;
-  box.innerHTML = `<div class="preview"><img class="thumb" src="${thumb(id)}" alt=""><div class="grow"><label for="title" style="margin-top:0">Song & artist</label><input id="title" maxlength="200" value="${esc(title)}" placeholder="Song – Artist"></div></div>`;
-  btn.disabled = false;
-}
-
 async function addSong() {
-  const id = G.pendingId; const title = ($("#title")?.value || "").trim(); const cat = $("#cat").value;
-  if (!id) return toast("Paste a YouTube link first");
+  const r = G.yt.sel; const title = ($("#title")?.value || "").trim(); const cat = $("#cat").value;
+  if (!r || r.loading) return toast(G.yt.mode === "paste" ? "Paste a YouTube link first" : "Find a video first");
   if (!title) return toast("Add the song name");
-  if (S.subs.some(s => s.category === cat && s.video_id === id)) return toast("That video is already in this category");
+  if (inCat(cat, r.id)) return toast("That video is already in this category");
   const btn = $("#addBtn"); btn.disabled = true;
   document.activeElement?.blur();
   try {
-    const newId = await rpc("add_submission", { p_token: token(), p_team: guestTeam().id, p_category: cat, p_url: $("#url").value.trim().slice(0, 300), p_video_id: id, p_title: title });
+    const url = (r.pasted ? r.url : "https://www.youtube.com/watch?v=" + r.id).slice(0, 300);
+    const newId = await rpc("add_submission", { p_token: token(), p_team: guestTeam().id, p_category: cat, p_url: url, p_video_id: r.id, p_title: title });
     S.mySubs.add(newId); store.set("mvs_last_cat", cat); store.set(lockKey(), "1");
-    $("#url").value = ""; G.pendingId = null; $("#previewBox").innerHTML = "";
+    $("#find").value = ""; Object.assign(G.yt, { q: "", status: "idle", results: [], sel: null, title: "" }); G.yt.run++; paintYt();
     await refresh(); toast(S.mySubs.size === 1 ? "First video’s in. You can do it!" : `Added to ${cat}.`);
-  } catch (e) { toast(errMsg(e)); btn.disabled = false; }
+  } catch (e) { toast(errMsg(e)); if ($("#addBtn")) syncAdd(); }
 }
 
 async function loadMine() {
@@ -1024,10 +1325,11 @@ const isDJ = () => location.hash.replace("#", "").toLowerCase() === "dj";
 let refreshing = false;
 let lastSnap = "";
 // Polling only redraws when the data actually changed, and never while someone
-// has a dropdown open or is typing (a redraw would close the dropdown / steal the click).
+// has a dropdown open, is typing, or is previewing a video (a redraw would close it / restart it).
 const snapshot = () => JSON.stringify([GAME, S.games, S.teams, S.subs, S.rounds, S.tallies, S.game, S.myVotes, [...S.mySubs].sort(), S.noGame]);
 function inUse() {
   const a = document.activeElement;
+  if ($("#pick iframe")) return true;
   return !!a && (a.tagName === "SELECT" || a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && !["checkbox", "radio", "button", "submit"].includes(a.type)));
 }
 async function refresh() {
@@ -1058,6 +1360,7 @@ function render() {
 }
 window.addEventListener("hashchange", () => { $("#screen")?.remove(); D.screen = null; S.loaded = false; lastSnap = ""; render(); refresh(); });
 render(); refresh();
+if (!isDJ()) ytCheck();
 setInterval(() => { if (!document.hidden) refresh(); }, isDJ() ? 2000 : 3000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 </script>
