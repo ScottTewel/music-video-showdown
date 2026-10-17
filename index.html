@@ -1175,20 +1175,35 @@ function playVideo(id) {
   D.playing = id; D.played.add(id); store.set("mvs_played", JSON.stringify([...D.played]));
   setPhase("playing", s.category, id);
   const list = subsIn(s.category); const idx = list.findIndex(x => x.id === id);
-  const el = document.createElement("div"); el.className = "stage"; el.id = "stage";
-  el.innerHTML = `<iframe src="https://www.youtube.com/embed/${s.video_id}?autoplay=1&rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
-    <div class="stagebar"><span class="muted small">${esc(s.category)} · ${idx + 1} of ${list.length}</span>
+  const prev = list[idx - 1], next = list[idx + 1];
+  // Reuse the same stage so switching videos doesn't drop out of fullscreen.
+  let el = $("#stage");
+  if (!el) {
+    el = document.createElement("div"); el.className = "stage"; el.id = "stage";
+    el.innerHTML = `<iframe id="stageFrame" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe><div class="stagebar" id="stageBar"></div>`;
+    document.body.appendChild(el);
+    D.keys = e => {
+      if (!$("#stage") || e.target.closest?.("input,select,textarea")) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); ($("#nextBtn") || $("#doneBtn"))?.click(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); $("#prevBtn")?.click(); }
+    };
+    document.addEventListener("keydown", D.keys);
+  }
+  $("#stageFrame").src = `https://www.youtube.com/embed/${s.video_id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+  $("#stageBar").innerHTML = `<span class="muted small">${esc(s.category)} · ${idx + 1} of ${list.length}</span>
       <span class="grow"></span>
       <a class="btn-ghost btn-sm" style="text-decoration:none;color:var(--text);border-radius:9px" href="https://www.youtube.com/watch?v=${s.video_id}" target="_blank" rel="noopener">Won't play? Open on YouTube ↗</a>
       <button class="btn-ghost btn-sm" id="fsBtn">⛶ Fullscreen</button>
-      ${idx < list.length - 1 ? `<button class="btn-gold btn-sm" id="nextBtn">Next video ▶</button>` : `<button class="btn-gold btn-sm" id="doneBtn">Done → open voting</button>`}
-      <button class="btn-sm" id="stopBtn">✕ Stop</button></div>`;
-  document.body.appendChild(el);
-  const stop = () => { el.remove(); D.playing = null; renderDJ(); };
+      <button class="btn-ghost btn-sm" id="prevBtn" ${prev ? "" : "disabled"} title="Previous video (← key)">◀ Previous</button>
+      ${next ? `<button class="btn-gold btn-sm" id="nextBtn" title="Next video (→ key)">Next video ▶</button>` : `<button class="btn-gold btn-sm" id="doneBtn">Done → open voting</button>`}
+      <button class="btn-sm" id="stopBtn">✕ Stop</button>`;
+  const stop = () => { document.removeEventListener("keydown", D.keys); el.remove(); D.playing = null; renderDJ(); };
   $("#stopBtn").onclick = () => { stop(); setPhase("idle", s.category); };
   $("#fsBtn").onclick = () => { (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); };
-  if ($("#nextBtn")) $("#nextBtn").onclick = () => { el.remove(); D.playing = null; playVideo(list[idx + 1].id); };
+  if (prev) $("#prevBtn").onclick = () => playVideo(prev.id);
+  if (next) $("#nextBtn").onclick = () => playVideo(next.id);
   if ($("#doneBtn")) $("#doneBtn").onclick = async () => { stop(); D.cat = s.category; if (!S.rounds[s.category]) { $("#openVote")?.click(); } };
+  $("#stageBar").querySelector("button:not([disabled])")?.blur();
 }
 
 function drawScreen() {
