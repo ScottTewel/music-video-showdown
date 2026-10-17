@@ -451,6 +451,12 @@ async function loadAll() {
   S.rounds = Object.fromEntries(r.data.map(x => [x.category, x.status]));
   S.loaded = true;
 }
+// The round guests vote on: the one the DJ most recently opened (game_state), else any open round.
+function liveVoteCat() {
+  const cur = S.game && S.game.current_category;
+  if (cur && S.rounds[cur] === "voting") return cur;
+  return Object.keys(S.rounds).find(c => S.rounds[c] === "voting") || "";
+}
 const teamName = id => (S.teams.find(t => t.id === id) || {}).name || "Unknown";
 const subsIn = cat => S.subs.filter(s => s.category === cat);
 const votesFor = id => { const r = S.tallies.find(x => x.submission_id === id); return r ? Number(r.votes) : 0; };
@@ -500,7 +506,7 @@ function renderGuest() {
   if (!team || !S.teams.some(t => t.id === team.id)) { renderJoin(brand); return; }
 
   const g = S.game || {};
-  const votingCat = Object.keys(S.rounds).find(c => S.rounds[c] === "voting");
+  const votingCat = liveVoteCat();
   const tabs = `<nav class="tabs">
     <button data-tab="add" class="${G.tab === "add" ? "on" : ""}">➕ Add</button>
     <button data-tab="picks" class="${G.tab === "picks" ? "on" : ""}">🎬 Picks</button>
@@ -1125,11 +1131,11 @@ function bindDJ() {
     catch { prompt("Guest link for " + GAME.name, url); }
   };
   const on = (id, fn) => { const el = $("#" + id); if (el) el.onclick = fn; };
-  on("openVote", async () => { await hostCall("host_set_round", { p_category: D.cat, p_status: "voting" }); await setPhase("voting", D.cat); D.screen = "vote"; drawScreen(); });
+  on("openVote", async () => { await closeOtherRounds(D.cat); await hostCall("host_set_round", { p_category: D.cat, p_status: "voting" }); await setPhase("voting", D.cat); D.screen = "vote"; drawScreen(); });
   on("showVote", () => { D.screen = "vote"; drawScreen(); });
   on("closeVote", async () => { await hostCall("host_set_round", { p_category: D.cat, p_status: "closed" }); await setPhase("results", D.cat); D.screen = "results"; drawScreen(); });
   on("showResults", async () => { await setPhase("results", D.cat); D.screen = "results"; drawScreen(); });
-  on("reopen", async () => { await hostCall("host_set_round", { p_category: D.cat, p_status: "voting" }); await setPhase("voting", D.cat); D.screen = "vote"; drawScreen(); });
+  on("reopen", async () => { await closeOtherRounds(D.cat); await hostCall("host_set_round", { p_category: D.cat, p_status: "voting" }); await setPhase("voting", D.cat); D.screen = "vote"; drawScreen(); });
   on("resetRound", async () => { if (!confirm(`Clear all votes for ${D.cat} and start the round over?`)) return; await hostCall("host_set_round", { p_category: D.cat, p_status: null }); });
 }
 
@@ -1144,6 +1150,15 @@ async function newGame() {
   if (!name || !name.trim()) return;
   try { const id = await rpc("host_create_game", { p_pin: D.pin, p_name: name.trim() }); await switchGame(id); }
   catch (e) { toast(errMsg(e)); }
+}
+// Only one round can be open for voting. Another open round with votes gets closed (scored);
+// one with no votes is reset, so it doesn't show up as "done".
+async function closeOtherRounds(keep) {
+  for (const c of Object.keys(S.rounds)) {
+    if (c === keep || S.rounds[c] !== "voting") continue;
+    const hasVotes = S.tallies.some(t => t.category === c && Number(t.votes) > 0);
+    await rpc("host_set_round", { p_pin: D.pin, p_game: GAME.id, p_category: c, p_status: hasVotes ? "closed" : null }).catch(e => toast(errMsg(e)));
+  }
 }
 async function hostCall(fn, args) {
   document.activeElement?.blur(); // e.g. the "Move…" dropdown, so the result can redraw
@@ -1352,7 +1367,7 @@ function render() {
     renderDJ();
   } else {
     // auto-jump to the vote tab when a round opens
-    const votingCat = Object.keys(S.rounds).find(c => S.rounds[c] === "voting") || "";
+    const votingCat = liveVoteCat();
     if (votingCat && votingCat !== G.lastPhaseKey && guestTeam()) G.tab = "vote";
     G.lastPhaseKey = votingCat;
     renderGuest();
