@@ -298,6 +298,36 @@ a{color:var(--gold)}
   .tape:hover{translate:0 0 var(--z);rotate:y calc(var(--yaw,0deg) * var(--yk,1))}
   .tape:hover .lab::before,.tape:hover b{animation:none}
 }
+/* ---------- TV scoreboard: the countdown ---------- */
+.cd{display:grid;gap:1.3vh;max-width:1400px;padding-bottom:9vh}
+.cd-row{display:grid;grid-template-columns:2.2em 3.4em minmax(0,1fr) minmax(80px,22%) 4.6em;align-items:center;gap:1.4vw;
+  padding:1.4vh 1.6vw;border-radius:16px;background:var(--panel);border:1px solid var(--line);font-size:clamp(17px,2vw,30px);
+  animation:cdIn .55s cubic-bezier(.16,1,.3,1) var(--d) both}
+.cd.still .cd-row{animation:none}
+@keyframes cdIn{from{opacity:0;transform:translateY(18px) scaleY(.6);filter:brightness(2.2)}to{opacity:1;transform:none;filter:none}}
+.cd-rank{font-family:var(--display);font-size:1.6em;line-height:1;color:var(--muted);text-align:center}
+.mv{justify-self:start;font-weight:800;font-size:.68em;padding:.18em .5em;border-radius:7px;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.mv.up{background:rgba(157,255,107,.16);color:var(--lime)}
+.mv.down{background:rgba(255,93,122,.16);color:#ff8fa3}
+.mv.same{color:var(--muted)}
+.mv.new{background:rgba(62,232,255,.14);color:var(--cyan)}
+.cd-name{min-width:0;display:flex;flex-direction:column}
+.cd-name b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd-name i{font-style:normal;font-size:.6em;font-weight:700;color:var(--gold);letter-spacing:.02em}
+.cd-bar{height:.5em;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.cd-bar span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+.cd-pts{font-family:var(--display);font-size:1.35em;text-align:right;line-height:1}
+.cd-pts small{font-family:Archivo,sans-serif;font-size:.42em;font-weight:600;color:var(--muted);margin-left:.25em}
+.cd-row.lead{background:linear-gradient(90deg,rgba(255,210,63,.18),rgba(255,210,63,.04));border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 0 30px rgba(255,210,63,.18)}
+.cd-row.lead .cd-rank{color:var(--gold);text-shadow:-.05em 0 0 var(--pink),.05em 0 0 var(--cyan)}
+.cd-row.lead .cd-bar span{background:linear-gradient(90deg,var(--gold),#fff3b0)}
+.ticker{position:fixed;left:0;right:0;bottom:0;overflow:hidden;background:var(--pink);color:#fff;font-weight:800;font-size:clamp(15px,1.6vw,24px);
+  padding:1.1vh 0;border-top:3px solid var(--gold);white-space:nowrap}
+.ticker-in{display:inline-flex;animation:crawl 38s linear infinite}
+.ticker-in > span{padding-right:2em}
+.ticker .tk{color:var(--gold);margin:0 1em;font-size:.7em;vertical-align:middle}
+@keyframes crawl{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.cd-row{animation:none}.ticker-in{animation:none}}
 #catsScreen .score-row,#teamsScreen .score-row{font-size:15px;padding:12px 14px}
 #catsScreen .score-row b{font-size:17px}
 .mini .item{padding:6px;margin-bottom:6px;background:rgba(255,255,255,.04)}
@@ -442,13 +472,14 @@ async function loadAll() {
   const [t, s, r, g, tal] = await Promise.all([
     sb.from("teams").select("id,name").eq("game_id", gid).order("name"),
     sb.from("submissions").select("id,team_id,category,url,video_id,title,created_at").eq("game_id", gid).order("created_at"),
-    sb.from("rounds").select("category,status").eq("game_id", gid),
+    sb.from("rounds").select("category,status,updated_at").eq("game_id", gid),
     sb.from("game_state").select("*").eq("game_id", gid).maybeSingle(),
     sb.rpc("get_tallies", { p_game: gid }),
   ]);
   for (const x of [t, s, r, g, tal]) if (x.error) throw x.error;
   S.teams = t.data; S.subs = s.data; S.game = g.data; S.tallies = tal.data || [];
   S.rounds = Object.fromEntries(r.data.map(x => [x.category, x.status]));
+  S.roundAt = Object.fromEntries(r.data.map(x => [x.category, x.updated_at]));
   S.loaded = true;
 }
 // The round guests vote on: the one the DJ most recently opened (game_state), else any open round.
@@ -469,12 +500,47 @@ function rankRound(cat) {
   }
   return list;
 }
-function scoreboard() {
+function scoreboard(skipCat) {
   const pts = Object.fromEntries(S.teams.map(t => [t.id, 0]));
-  for (const cat of Object.keys(S.rounds)) if (S.rounds[cat] === "closed") for (const s of rankRound(cat)) if (s.points) pts[s.team_id] = (pts[s.team_id] || 0) + s.points;
+  for (const cat of Object.keys(S.rounds)) if (S.rounds[cat] === "closed" && cat !== skipCat) for (const s of rankRound(cat)) if (s.points) pts[s.team_id] = (pts[s.team_id] || 0) + s.points;
   const rows = S.teams.map(t => ({ name: t.name, id: t.id, pts: pts[t.id] || 0 })).sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name));
   for (const r of rows) r.rank = 1 + rows.filter(o => o.pts > r.pts).length;
   return rows;
+}
+// TV scoreboard as a music-video countdown: chart moves since the last round, revealed bottom-up.
+function countdownHtml() {
+  const rows = scoreboard();
+  const closed = Object.keys(S.rounds).filter(c => S.rounds[c] === "closed")
+    .sort((a, b) => String(S.roundAt?.[a] || "").localeCompare(String(S.roundAt?.[b] || "")));
+  const last = closed[closed.length - 1];
+  const prev = closed.length > 1 ? Object.fromEntries(scoreboard(last).map(r => [r.id, r.rank])) : null;
+  const top = Math.max(1, ...rows.map(r => r.pts));
+  let mover = null;
+  for (const r of rows) {
+    r.move = prev ? prev[r.id] - r.rank : null;
+    if (r.move >= 2 && (!mover || r.move > mover.move)) mover = r;
+  }
+  const lastRank = Math.max(...rows.map(r => r.rank));
+  const tag = r => r.rank === 1 && r.pts > 0 ? "#1 with a bullet"
+    : r === mover ? "Biggest mover"
+    : rows.length > 2 && r.rank === lastRank && r.pts < top ? "Still connecting at 56k" : "";
+  const moveHtml = r => r.move == null ? `<span class="mv new">${closed.length ? "NEW" : "—"}</span>`
+    : r.move > 0 ? `<span class="mv up">▲${r.move}</span>` : r.move < 0 ? `<span class="mv down">▼${-r.move}</span>` : `<span class="mv same">—</span>`;
+  const n = rows.length;
+  const body = n ? rows.map((r, i) => `<div class="cd-row ${r.rank === 1 && r.pts > 0 ? "lead" : ""}" style="--d:${(n - 1 - i) * 0.35}s">
+      <span class="cd-rank">${r.rank}</span>${moveHtml(r)}
+      <span class="cd-name"><b>${esc(r.name)}</b>${tag(r) ? `<i>${tag(r)}</i>` : ""}</span>
+      <span class="cd-bar"><span style="width:${Math.round(r.pts / top * 100)}%"></span></span>
+      <span class="cd-pts">${r.pts}<small>pts</small></span></div>`).join("") : `<p class="muted" style="font-size:24px">No teams yet.</p>`;
+  const nextCat = cats().map(c => c.name).find(c => !S.rounds[c]);
+  const ticker = [
+    nextCat ? `Coming up next: ${nextCat}` : "That's a wrap on the categories",
+    "The request line is open: add your Wildcard picks",
+    "Brought to you by Surge, Dunkaroos and a 56k modem",
+    `${closed.length} round${closed.length === 1 ? "" : "s"} in the books`,
+    "Scores update after every round",
+  ].map(esc).join(`<span class="tk">●</span>`);
+  return `<div class="cd">${body}</div><div class="ticker" aria-hidden="true"><div class="ticker-in"><span>${ticker}<span class="tk">●</span></span><span>${ticker}<span class="tk">●</span></span></div></div>`;
 }
 function scoreRows(rows) {
   if (!rows.length) return `<p class="muted">No teams yet.</p>`;
@@ -1231,7 +1297,12 @@ function drawScreen() {
     $("#toScores").onclick = () => { D.screen = "scoreboard"; setPhase("scoreboard", null); drawScreen(); };
   } else if (D.screen === "scoreboard") {
     const done = Object.values(S.rounds).filter(v => v === "closed").length;
-    el.innerHTML = `${close}<div class="kicker">After ${done} round${done === 1 ? "" : "s"}</div><h2 style="margin-bottom:3vh">Scoreboard</h2><div style="max-width:900px">${scoreRows(scoreboard())}</div>`;
+    const html = countdownHtml();
+    el.innerHTML = `${close}<div class="kicker">${done ? `After ${done} round${done === 1 ? "" : "s"}` : "Before the first round"}</div><h2 style="margin-bottom:3vh">The Countdown</h2>${html}`;
+    // play the bottom-up reveal once per new standings, not on every background refresh
+    const key = JSON.stringify(scoreboard().map(r => [r.id, r.pts]));
+    if (D.boardKey === key) el.querySelector(".cd")?.classList.add("still");
+    D.boardKey = key;
   }
   $("#closeScreen").onclick = () => { el.remove(); D.screen = null; renderDJ(); };
 }
