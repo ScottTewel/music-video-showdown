@@ -856,24 +856,22 @@ async function setPhase(phase, cat, nowPlaying = null) {
 
 function playVideo(id) {
   const s = S.subs.find(x => x.id === id); if (!s) return;
-  D.playing = id; D.startedAt = Date.now(); D.played.add(id); store.set("mvs_played", JSON.stringify([...D.played]));
+  D.playing = id; D.played.add(id); store.set("mvs_played", JSON.stringify([...D.played]));
   setPhase("playing", s.category, id);
   const list = subsIn(s.category); const idx = list.findIndex(x => x.id === id);
   const el = document.createElement("div"); el.className = "stage"; el.id = "stage";
   el.innerHTML = `<iframe src="https://www.youtube.com/embed/${s.video_id}?autoplay=1&rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
-    <div class="stagebar"><span class="muted small">${esc(s.category)} · ${idx + 1} of ${list.length}</span><span id="timer" class="display" style="margin-left:12px;font-size:20px">0:00</span>
+    <div class="stagebar"><span class="muted small">${esc(s.category)} · ${idx + 1} of ${list.length}</span>
       <span class="grow"></span>
       <a class="btn-ghost btn-sm" style="text-decoration:none;color:var(--text);border-radius:9px" href="https://www.youtube.com/watch?v=${s.video_id}" target="_blank" rel="noopener">Won't play? Open on YouTube ↗</a>
       <button class="btn-ghost btn-sm" id="fsBtn">⛶ Fullscreen</button>
       ${idx < list.length - 1 ? `<button class="btn-gold btn-sm" id="nextBtn">Next video ▶</button>` : `<button class="btn-gold btn-sm" id="doneBtn">Done → open voting</button>`}
       <button class="btn-sm" id="stopBtn">✕ Stop</button></div>`;
   document.body.appendChild(el);
-  clearInterval(D.timer);
-  D.timer = setInterval(() => { const t = Math.floor((Date.now() - D.startedAt) / 1000); const tm = $("#timer"); if (tm) { tm.textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; tm.style.color = t >= 90 ? "var(--red)" : t >= 60 ? "var(--gold)" : ""; } }, 500);
-  const stop = () => { clearInterval(D.timer); el.remove(); D.playing = null; renderDJ(); };
+  const stop = () => { el.remove(); D.playing = null; renderDJ(); };
   $("#stopBtn").onclick = () => { stop(); setPhase("idle", s.category); };
   $("#fsBtn").onclick = () => { (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el); };
-  if ($("#nextBtn")) $("#nextBtn").onclick = () => { clearInterval(D.timer); el.remove(); D.playing = null; playVideo(list[idx + 1].id); };
+  if ($("#nextBtn")) $("#nextBtn").onclick = () => { el.remove(); D.playing = null; playVideo(list[idx + 1].id); };
   if ($("#doneBtn")) $("#doneBtn").onclick = async () => { stop(); D.cat = s.category; if (!S.rounds[s.category]) { $("#openVote")?.click(); } };
 }
 
